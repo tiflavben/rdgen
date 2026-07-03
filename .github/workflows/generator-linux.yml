@@ -127,6 +127,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: rustdesk/rustdesk
+          token: ${{ secrets.GITHUB_TOKEN }}
           ref: refs/tags/${{ env.VERSION }}
           submodules: recursive
 
@@ -135,6 +136,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: rustdesk/rustdesk
+          token: ${{ secrets.GITHUB_TOKEN }}
           submodules: recursive
 
       - name: Set Swap Space
@@ -661,6 +663,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: rustdesk/rustdesk
+          token: ${{ secrets.GITHUB_TOKEN }}
           ref: refs/tags/${{ env.VERSION }}
           submodules: recursive
 
@@ -669,6 +672,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: rustdesk/rustdesk
+          token: ${{ secrets.GITHUB_TOKEN }}
           submodules: recursive
 
       - name: Download Binary
@@ -794,6 +798,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: rustdesk/rustdesk
+          token: ${{ secrets.GITHUB_TOKEN }}
           ref: refs/tags/${{ env.VERSION }}
           submodules: recursive
 
@@ -802,6 +807,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: rustdesk/rustdesk
+          token: ${{ secrets.GITHUB_TOKEN }}
           submodules: recursive
 
       - name: Download Binary

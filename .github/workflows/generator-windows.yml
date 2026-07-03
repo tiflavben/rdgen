@@ -127,6 +127,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: rustdesk/rustdesk
+          token: ${{ secrets.GITHUB_TOKEN }}
           ref: refs/tags/${{ env.VERSION }}
           submodules: recursive
 
@@ -135,6 +136,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: rustdesk/rustdesk
+          token: ${{ secrets.GITHUB_TOKEN }}
           submodules: recursive
 
       - name: Restore bridge files
