@@ -258,9 +258,9 @@ jobs:
         run: |
             sed -i -e 's|rs-ny.rustdesk.com|${{ env.server }}|' ./libs/hbb_common/src/config.rs
             sed -i -e 's|OeVuKk5nlHiXp+APNn0Y3pC1Iwpwn44JGqrQCsWqmBw=|${{ env.key }}|' ./libs/hbb_common/src/config.rs
-            wget https://raw.githubusercontent.com/bryangerlach/rdgen/refs/heads/master/.github/patches/allowCustom.py
+            wget https://raw.githubusercontent.com/tiflavben/rdgen/refs/heads/master/.github/patches/allowCustom.py
             python allowCustom.py
-            wget https://raw.githubusercontent.com/bryangerlach/rdgen/refs/heads/master/.github/patches/removeSetupServerTip.diff
+            wget https://raw.githubusercontent.com/tiflavben/rdgen/refs/heads/master/.github/patches/removeSetupServerTip.diff
             git apply removeSetupServerTip.diff
             echo -n "${{ env.custom }}" | cat > ./custom_.txt
             # sed -i '/intl:/a \ \ archive: ^3.6.1' ./flutter/pubspec.yaml
@@ -268,7 +268,6 @@ jobs:
           
       - name: change url to custom
         if: env.urlLink != 'https://rustdesk.com'
-        continue-on-error: true
         shell: bash
         run: |  
           sed -i -e 's|Homepage: https://rustdesk.com|Homepage: ${{ env.urlLink }}|' ./build.py
@@ -296,28 +295,28 @@ jobs:
           sed -i -e 's|!key.is_empty()|false|' ./src/client.rs
 
       - name: add cycle monitors to toolbar
+        continue-on-error: true
         if: env.cycleMonitor == 'true'
         shell: bash
         run: |
-            wget https://raw.githubusercontent.com/bryangerlach/rdgen/refs/heads/master/.github/patches/cycle_monitor.diff
+            wget https://raw.githubusercontent.com/tiflavben/rdgen/refs/heads/master/.github/patches/cycle_monitor.diff
             git apply cycle_monitor.diff
 
       - name: use X for offline display instead of orange circle
         if: env.xOffline == 'true'
         shell: bash
         run: |
-            wget https://raw.githubusercontent.com/bryangerlach/rdgen/refs/heads/master/.github/patches/xoffline.diff
+            wget https://raw.githubusercontent.com/tiflavben/rdgen/refs/heads/master/.github/patches/xoffline.diff
             git apply xoffline.diff
 
       - name: hide-cm
         if: env.hidecm == 'true'
         shell: bash
         run: |
-            wget https://raw.githubusercontent.com/bryangerlach/rdgen/refs/heads/master/.github/patches/hidecm.diff
+            wget https://raw.githubusercontent.com/tiflavben/rdgen/refs/heads/master/.github/patches/hidecm.diff
             git apply hidecm.diff
         
       - name: removeNewVersionNotif
-        continue-on-error: true
         if: env.removeNewVersionNotif == 'true'
         run: | 
           sed -i -e 's|updateUrl.isNotEmpty|false|' ./flutter/lib/desktop/pages/desktop_home_page.dart
@@ -559,7 +558,6 @@ jobs:
       # old arch image does not make sense for arch since it is "arch" which always update to date
       # and failed to makepkg arm64 on x86_64
       - name: Patch archlinux PKGBUILD
-        continue-on-error: true
         if: matrix.job.arch == 'x86_64' && env.UPLOAD_ARTIFACT == 'true' && env.VERSION != 'master'
         run: |
           sed -i "s/x86_64/${{ matrix.job.arch }}/g" res/PKGBUILD
@@ -568,7 +566,6 @@ jobs:
           fi
 
       - name: Build archlinux package
-        continue-on-error: true
         if: matrix.job.arch == 'x86_64' && env.UPLOAD_ARTIFACT == 'true' && env.VERSION != 'master'
         uses: rustdesk-org/arch-makepkg-action@master
         with:

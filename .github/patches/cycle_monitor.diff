@@ -1,43 +1,19 @@
 diff --git a/flutter/lib/desktop/widgets/remote_toolbar.dart b/flutter/lib/desktop/widgets/remote_toolbar.dart
-index 210cc8571..7c7bd5b44 100644
+index 34879e5..876fd3a 100644
 --- a/flutter/lib/desktop/widgets/remote_toolbar.dart
 +++ b/flutter/lib/desktop/widgets/remote_toolbar.dart
-@@ -779,6 +779,7 @@ class _RemoteToolbarState extends State<RemoteToolbar> {
-           borderRadius: borderRadius,
-           child: _DraggableShowHide(
-             id: widget.id,
-+            ffi: widget.ffi,
-             sessionId: widget.ffi.sessionId,
-             dragging: _dragging,
-             fraction: _fraction,
-@@ -2970,6 +2971,7 @@ class RdoMenuButton<T> extends StatelessWidget {
- 
- class _DraggableShowHide extends StatefulWidget {
-   final String id;
-+  final FFI ffi;
-   final SessionID sessionId;
-   final RxDouble fraction;
-   final Rx<_ToolbarEdge> edge;
-@@ -2993,6 +2995,7 @@ class _DraggableShowHide extends StatefulWidget {
-   const _DraggableShowHide({
-     Key? key,
-     required this.id,
-+    required this.ffi,
-     required this.sessionId,
-     required this.fraction,
-     required this.edge,
-@@ -3249,6 +3252,7 @@ class _DraggableShowHideState extends State<_DraggableShowHide> {
+@@ -3346,6 +3346,7 @@ class _DraggableShowHideState extends State<_DraggableShowHide> {
        mainAxisSize: MainAxisSize.min,
        children: [
          _buildDraggable(context),
 +        _CycleMonitorMenu(id: widget.id, ffi: widget.ffi),
-         Obx(() => buttonWrapper(
-               () {
-                 widget.setFullscreen(!isFullscreen.value);
-@@ -3409,3 +3413,50 @@ class EdgeThicknessControl extends StatelessWidget {
-     return slider;
+         Obx(() => collapse.isTrue
+             ? _MinimizedMonitorSwitchButton(id: widget.id, ffi: widget.ffi)
+             : const Offstage()),
+@@ -3578,4 +3579,51 @@ class _MinimizedMonitorSwitchButton extends StatelessWidget {
+       );
+     });
    }
- }
 +
 +class _CycleMonitorMenu extends StatelessWidget {
 +  final String id;
@@ -53,7 +29,6 @@ index 210cc8571..7c7bd5b44 100644
 +  Widget build(BuildContext context) {
 +    final pi = ffi.ffiModel.pi;
 +
-+    //for (int i = 0; i < pi.displays.length; i++) {
 +    return TextButton(
 +      onPressed: () {
 +        RxInt display = CurrentDisplayState.find(id);
@@ -75,7 +50,7 @@ index 210cc8571..7c7bd5b44 100644
 +                ))),
 +        Container(
 +            child: Align(
-+                alignment: Alignment(0.0, -0.4),
++                alignment: const Alignment(0.0, -0.4),
 +                child: Text(
 +                  '  ${CurrentDisplayState.find(id).value + 1}/${pi.displays.length}',
 +                  style: const TextStyle(
@@ -85,3 +60,5 @@ index 210cc8571..7c7bd5b44 100644
 +    );
 +  }
 +}
++
+ }
