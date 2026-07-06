@@ -40,15 +40,37 @@ button:hover { background-color: #0066cc; }
 .sponsor-button { display: inline-flex; align-items: center; padding: 14px 28px; background: linear-gradient(135deg,#00457C 0%,#0095EA 100%); color: white; text-decoration: none; border-radius: 50px; font-size: 16px; font-weight: bold; box-shadow: 0 4px 15px rgba(0,119,255,0.3); transition: all 0.3s ease; border: 1px solid rgba(255,255,255,0.1); }
 .sponsor-button:hover { background: linear-gradient(135deg,#005AA7 0%,#0095EA 100%); border-color: rgba(255,255,255,0.2); }
 .sponsor-button i { margin-right: 12px; font-size: 20px; }
+
+.build-card{background:#151515;border-radius:8px;padding:15px;margin-bottom:12px;border-left:3px solid #333;transition:all 0.3s;}
+.build-card.build-active{border-left-color:#0077ff;}
+.build-card.build-success{border-left-color:#28a745;}
+.build-card.build-failed{border-left-color:#dc3545;}
+.build-card-header{display:flex;align-items:center;gap:10px;color:#fff;font-size:14px;}
+.build-card-header i{font-size:18px;}
+.build-status{margin-left:auto;font-size:12px;color:#aaa;}
+.build-progress-bar{width:100%;height:6px;background:#333;border-radius:3px;margin-top:10px;overflow:hidden;}
+.build-progress-fill{height:100%;background:linear-gradient(90deg,#0077ff,#00c6ff);border-radius:3px;transition:width 0.5s ease;}
+.build-active .build-progress-fill{animation:progressPulse 1.5s ease-in-out infinite;}
+@keyframes progressPulse{0%,100%{opacity:1;}50%{opacity:0.6;}}
+.build-success .build-progress-fill{background:linear-gradient(90deg,#28a745,#5be885);}
+.build-failed .build-progress-fill{background:linear-gradient(90deg,#dc3545,#ff6b6b);}
+.build-dl-link{display:inline-block;margin:5px 8px 0 0;padding:6px 14px;background:#0077ff;color:#fff;border-radius:4px;text-decoration:none;font-size:12px;}
+.build-dl-link:hover{background:#0066cc;}
 </style>
 </head>
 <body>
 <h1><i class="fas fa-cogs"></i> RustDesk 自定义客户端构建器</h1>
 <form id="myForm" action="/generator" method="post" enctype="multipart/form-data">
+<div id="build-queue"></div>
 <div class="save-load-section-container">
 <div class="section">
 <h2 id="saveLoadTitle">保存/加载配置 <i class="fas fa-chevron-down"></i></h2>
 <div class="save-load-section">
+  <div style="text-align:right;margin-bottom:5px;">
+    <button type="button" onclick="clearCompleted()" style="background:transparent;color:#666;border:1px solid #333;padding:2px 8px;border-radius:4px;font-size:11px;cursor:pointer;">
+      <i class="fas fa-broom"></i> 清除已完成
+    </button>
+  </div>
 <button type="button" onclick="saveFormData()">保存配置</button>
 <input type="file" id="fileInput" style="display:none;" accept=".json">
 <button type="button" onclick="loadFormData()">加载配置</button>
@@ -336,20 +358,185 @@ button:hover { background-color: #0066cc; }
 <div class="section"><button type="submit"><i class="fas fa-rocket"></i> 生成自定义客户端</button></div>
 </div>
 </form>
+
 <script>
-document.querySelectorAll('.platform-icon').forEach(function(icon){icon.addEventListener('click',function(){document.querySelectorAll('.platform-icon').forEach(function(i){i.classList.remove('active');});this.classList.add('active');document.getElementById('id_platform').value=this.dataset.platform;});});
-document.getElementById("{{ form.iconfile.id_for_label }}").addEventListener('change',function(e){previewImage(e.target,'icon-preview');});
-document.getElementById("{{ form.logofile.id_for_label }}").addEventListener('change',function(e){previewImage(e.target,'logo-preview');});
-document.getElementById("{{ form.privacyfile.id_for_label }}").addEventListener('change',function(e){previewImage(e.target,'privacy-preview');});
-document.getElementById("{{ form.hidecm.id_for_label }}").addEventListener('change',function(){if(this.checked){document.getElementById("passwordRequirement").style.display='block';document.getElementById("{{ form.permanentPassword.id_for_label }}").focus();document.getElementById("{{ form.passApproveMode.id_for_label }}").value='password';}else{document.getElementById("passwordRequirement").style.display='none';document.getElementById("{{ form.passApproveMode.id_for_label }}").value='password-click';}});
+// ===== Multi-User + Persistence Layer =====
+function getStorageKey() {
+  return "rdgen_builds";
+}
+
+function saveBuilds() {
+  try {
+    var cards = [];
+    document.querySelectorAll(".build-card").forEach(function(c) {
+      var uuid = c.dataset.uuid;
+      var status = document.getElementById("status-" + uuid);
+      var platform = c.dataset.platform || "";
+      var filename = c.dataset.filename || "";
+      if (uuid) {
+        cards.push({
+          uuid: uuid,
+          platform: platform,
+          filename: filename,
+          statusText: status ? status.textContent : "",
+          isActive: c.classList.contains("build-active"),
+          isSuccess: c.classList.contains("build-success"),
+          isFailed: c.classList.contains("build-failed"),
+          linksHtml: document.getElementById("links-" + uuid) ? document.getElementById("links-" + uuid).innerHTML : "",
+          errorHtml: document.getElementById("error-" + uuid) ? document.getElementById("error-" + uuid).innerHTML : ""
+        });
+      }
+    });
+    localStorage.setItem(getStorageKey(), JSON.stringify(cards));
+  } catch(e) {}
+}
+
+function loadBuildsOnStartup() {
+  try {
+    var data = localStorage.getItem(getStorageKey());
+    if (!data) return;
+    var cards = JSON.parse(data);
+    var queue = document.getElementById("build-queue");
+    if (!queue) return;
+    queue.innerHTML = "";
+    
+    cards.forEach(function(card) {
+      var el = createBuildCard(card.uuid, card.platform, card.filename);
+      queue.insertBefore(el, queue.firstChild);
+      
+      if (card.isSuccess) {
+        el.classList.remove("build-active");
+        el.classList.add("build-success");
+        var statusEl = document.getElementById("status-" + card.uuid);
+        var progressEl = document.getElementById("progress-" + card.uuid);
+        if (statusEl) statusEl.textContent = "构建完成";
+        if (progressEl) { progressEl.style.width = "100%"; progressEl.style.background = "linear-gradient(90deg,#28a745,#5be885)"; }
+        var linksEl = document.getElementById("links-" + card.uuid);
+        if (linksEl && card.linksHtml) { linksEl.innerHTML = card.linksHtml; linksEl.style.display = "block"; }
+      } else if (card.isFailed) {
+        el.classList.remove("build-active");
+        el.classList.add("build-failed");
+        var se = document.getElementById("status-" + card.uuid);
+        var pe = document.getElementById("progress-" + card.uuid);
+        if (se) se.textContent = card.statusText || "构建失败";
+        if (pe) { pe.style.width = "100%"; pe.style.background = "linear-gradient(90deg,#dc3545,#ff6b6b)"; }
+        var ee = document.getElementById("error-" + card.uuid);
+        if (ee && card.errorHtml) { ee.innerHTML = card.errorHtml; ee.style.display = "block"; }
+      } else if (card.isActive) {
+        // Resume polling
+        pollBuildStatus(card.uuid, card.platform, card.filename);
+      }
+    });
+  } catch(e) { console.error("Load builds error:", e); }
+}
+
+// User identification - add a small user input in save-load area
+// ===== Build Cards =====
+var platformIcons={"windows":"fab fa-windows","windows-x86":"fab fa-windows","linux":"fab fa-linux","android":"fab fa-android","macos":"fab fa-apple"};
+var platformNames={"windows":"Windows 64位","windows-x86":"Windows 32位","linux":"Linux","android":"Android","macos":"macOS"};
+
+function createBuildCard(uuid,platform,filename){
+  var card=document.createElement("div");
+  card.className="build-card";
+  card.id="card-"+uuid;
+  card.dataset.uuid=uuid;
+  card.dataset.platform=platform;
+  card.dataset.filename=filename;
+  card.innerHTML='<div class="build-card-header"><i class="'+(platformIcons[platform]||"fas fa-cube")+'"></i><span>'+(platformNames[platform]||platform)+" - "+filename+'</span><span class="build-status" id="status-'+uuid+'">准备中...</span></div><div class="build-progress-bar"><div class="build-progress-fill" id="progress-'+uuid+'" style="width:5%"></div></div><div class="build-links" id="links-'+uuid+'" style="display:none"></div><div class="build-error" id="error-'+uuid+'" style="display:none"></div>';
+  return card;
+}
+
+function updateBuildCard(uuid,data){
+  var statusEl=document.getElementById("status-"+uuid);
+  var progressEl=document.getElementById("progress-"+uuid);
+  var linksEl=document.getElementById("links-"+uuid);
+  var errorEl=document.getElementById("error-"+uuid);
+  var card=document.getElementById("card-"+uuid);
+  if(!statusEl||!card)return;
+  var status=data.status||"unknown";
+  if(["in_progress","queued","requested","waiting","started"].includes(status)){
+    statusEl.textContent="构建中...";progressEl.style.width="60%";
+    card.classList.remove("build-success","build-failed");card.classList.add("build-active");
+  }else if(["success","completed"].includes(status)){
+    statusEl.textContent="构建完成";progressEl.style.width="100%";
+    card.classList.remove("build-active","build-failed");card.classList.add("build-success");
+    if(data.downloads&&data.downloads.length>0){
+      var h='<div style="margin-top:10px;">';
+      data.downloads.forEach(function(d){h+='<a href="'+d.url+'" class="build-dl-link" download><i class="fas fa-download"></i> '+d.name+'</a>';});
+      h+="</div>";linksEl.innerHTML=h;linksEl.style.display="block";
+    }
+  }else if(["failure","cancelled","timed_out"].includes(status)){
+    statusEl.textContent="构建失败: "+status;progressEl.style.width="100%";
+    card.classList.remove("build-active","build-success");card.classList.add("build-failed");
+    var eh='<div style="margin-top:10px;color:#ff6b6b;">构建失败。';
+    if(data.log_url){eh+=' <a href="'+data.log_url+'" target="_blank" style="color:#5b9aff;">查看日志</a>';}
+    eh+="</div>";errorEl.innerHTML=eh;errorEl.style.display="block";
+  }
+  saveBuilds();
+}
+
+function pollBuildStatus(uuid,platform,filename){
+  var count=0;
+  var max=720;
+  var iv=setInterval(function(){
+    count++;
+    if(count>max){clearInterval(iv);var s=document.getElementById("status-"+uuid);if(s)s.textContent="超时";saveBuilds();return;}
+    fetch("/build_status_json?uuid="+encodeURIComponent(uuid))
+      .then(function(r){return r.json()})
+      .then(function(d){
+        updateBuildCard(uuid,d);
+        if(["success","completed","failure","cancelled","timed_out"].includes(d.status))clearInterval(iv);
+      })
+      .catch(function(e){console.error("poll error:",e);});
+  },5000);
+}
+
+// Form submit
+document.getElementById("myForm").addEventListener("submit",function(e){
+  e.preventDefault();
+  var filename=document.getElementById("{{ form.exename.id_for_label }}").value.trim();
+  if(!filename){alert("请先输入配置名称");return;}
+  var btn=this.querySelector('button[type="submit"]');
+  var origTxt=btn.innerHTML;
+  btn.disabled=true;btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> 提交中...';
+  var fd=new FormData(this);
+  fetch("/generator",{method:"POST",body:fd,headers:{"X-Requested-With":"XMLHttpRequest"}})
+    .then(function(r){return r.json()})
+    .then(function(data){
+      btn.disabled=false;btn.innerHTML=origTxt;
+      if(data.error){alert("错误: "+data.error);return;}
+      var uuid=data.uuid,platform=data.platform;
+      var card=createBuildCard(uuid,platform,filename);
+      var q=document.getElementById("build-queue");
+      q.insertBefore(card,q.firstChild);
+      pollBuildStatus(uuid,platform,filename);
+      saveBuilds();
+    })
+    .catch(function(err){btn.disabled=false;btn.innerHTML=origTxt;alert("提交失败: "+err.message);});
+});
+
+// ===== Existing functionality preserved =====
+document.querySelectorAll(".platform-icon").forEach(function(icon){icon.addEventListener("click",function(){document.querySelectorAll(".platform-icon").forEach(function(i){i.classList.remove("active");});icon.classList.add("active");var p=icon.dataset.platform;var sel=document.getElementById("id_platform");for(var j=0;j<sel.options.length;j++){if(sel.options[j].value===p){sel.selectedIndex=j;break;}}});});
+document.getElementById("id_platform").addEventListener("change",function(){var p=this.value;document.querySelectorAll(".platform-icon").forEach(function(i){i.classList.toggle("active",i.dataset.platform===p);});});
+document.getElementById("{{ form.passApproveMode.id_for_label }}").addEventListener("change",function(){document.getElementById("passwordRequirement").style.display=(this.value==="password")?"block":"none";});
 var enableKeyboard=document.getElementById("{{ form.enableKeyboard.id_for_label }}"),enableClipboard=document.getElementById("{{ form.enableClipboard.id_for_label }}"),enableFileTransfer=document.getElementById("{{ form.enableFileTransfer.id_for_label }}"),enableAudio=document.getElementById("{{ form.enableAudio.id_for_label }}"),enableTCP=document.getElementById("{{ form.enableTCP.id_for_label }}"),enableRemoteRestart=document.getElementById("{{ form.enableRemoteRestart.id_for_label }}"),enableRecording=document.getElementById("{{ form.enableRecording.id_for_label }}"),enableBlockingInput=document.getElementById("{{ form.enableBlockingInput.id_for_label }}"),enableRemoteModi=document.getElementById("{{ form.enableRemoteModi.id_for_label }}"),enablePrinter=document.getElementById("{{ form.enablePrinter.id_for_label }}"),enableCamera=document.getElementById("{{ form.enableCamera.id_for_label }}"),enableTerminal=document.getElementById("{{ form.enableTerminal.id_for_label }}");
-document.getElementById("{{ form.permissionsType.id_for_label }}").addEventListener('change',function(){var map={full:{k:true},view:{k:false}};function sa(arr,chk,dis){arr.forEach(function(el){el.checked=chk;el.disabled=dis;});}function sa2(arr,dis){arr.forEach(function(el){el.disabled=dis;});}function fc(arr,chk){arr.forEach(function(el){el.checked=chk;});}var all=[enableKeyboard,enableClipboard,enableFileTransfer,enableAudio,enableTCP,enableRemoteRestart,enableRecording,enableBlockingInput,enableRemoteModi];if(this.value==='full'){sa(all,true,true);sa([enablePrinter,enableCamera,enableTerminal],true,true);}else if(this.value==='view'){sa(all.concat([enablePrinter,enableCamera,enableTerminal]),false,true);}else if(this.value==='custom'){sa2(all,false);fc([enablePrinter,enableCamera,enableTerminal],false);}});
-function toggleNext(header){var sib=header.nextElementSibling;if(sib){sib.style.display=(sib.style.display==='none')?'':'none';header.classList.toggle('open');}}
+document.getElementById("{{ form.permissionsType.id_for_label }}").addEventListener("change",function(){var map={full:{k:true},view:{k:false}};function sa(arr,chk,dis){arr.forEach(function(el){el.checked=chk;el.disabled=dis;});}function sa2(arr,dis){arr.forEach(function(el){el.disabled=dis;});}function fc(arr,chk){arr.forEach(function(el){el.checked=chk;});}var all=[enableKeyboard,enableClipboard,enableFileTransfer,enableAudio,enableTCP,enableRemoteRestart,enableRecording,enableBlockingInput,enableRemoteModi];if(this.value==="full"){sa(all,true,true);sa([enablePrinter,enableCamera,enableTerminal],true,true);}else if(this.value==="view"){sa(all.concat([enablePrinter,enableCamera,enableTerminal]),false,true);}else if(this.value==="custom"){sa2(all,false);fc([enablePrinter,enableCamera,enableTerminal],false);}});
+function toggleNext(header){var sib=header.nextElementSibling;if(sib){sib.style.display=(sib.style.display==="none")?"":"none";header.classList.toggle("open");}}
 function previewImage(input,pcid){if(input.files&&input.files[0]){var r=new FileReader();r.onload=function(e){document.getElementById(pcid).innerHTML='<img src="'+e.target.result+'" class="preview-image">';};r.readAsDataURL(input.files[0]);}}
-document.getElementById('saveLoadTitle').addEventListener('click',function(){var s=document.querySelector('.save-load-section');s.style.display=(s.style.display==='none'||s.style.display==='')?'block':'none';});
-async function saveFormData(){var filename=document.getElementById("{{ form.exename.id_for_label }}").value.trim();if(!filename){alert('请先输入配置名称');return;}var els=document.querySelectorAll('#myForm input, #myForm select, #myForm textarea');var fd={};els.forEach(function(el){if(!el.name||el.type==='submit'||el.type==='button')return;if(el.type==='checkbox'){fd[el.name]=el.checked;}else if(el.type!=='file'){fd[el.name]=el.value||'';}});['icon','logo','privacy'].forEach(function(kind){var pv=document.getElementById(kind+'-preview');if(pv.firstChild&&pv.firstChild.src&&pv.firstChild.src.startsWith('data:image')){fd[kind+'file']=pv.firstChild.src;}});try{var f=document.getElementById("{{ form.iconfile.id_for_label }}").files[0];if(f&&!fd.iconfile)fd.iconfile=await readFileAsBase64(f);}catch(e){}try{var f=document.getElementById("{{ form.logofile.id_for_label }}").files[0];if(f&&!fd.logofile)fd.logofile=await readFileAsBase64(f);}catch(e){}try{var f=document.getElementById("{{ form.privacyfile.id_for_label }}").files[0];if(f&&!fd.privacyfile)fd.privacyfile=await readFileAsBase64(f);}catch(e){}var jd=JSON.stringify(fd,null,2);var blob=new Blob([jd],{type:'application/json'});var url=URL.createObjectURL(blob);var a=document.createElement('a');a.href=url;a.download=filename+'.json';document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);}
+document.getElementById("saveLoadTitle").addEventListener("click",function(){var s=document.querySelector(".save-load-section");s.style.display=(s.style.display==="none"||s.style.display==="")?"block":"none";});
+async function saveFormData(){var filename=document.getElementById("{{ form.exename.id_for_label }}").value.trim();if(!filename){alert("请先输入配置名称");return;}var els=document.querySelectorAll("#myForm input, #myForm select, #myForm textarea");var fd={};els.forEach(function(el){if(!el.name||el.type==="submit"||el.type==="button")return;if(el.type==="checkbox"){fd[el.name]=el.checked;}else if(el.type!=="file"){fd[el.name]=el.value||"";}});["icon","logo","privacy"].forEach(function(kind){var pv=document.getElementById(kind+"-preview");if(pv.firstChild&&pv.firstChild.src&&pv.firstChild.src.startsWith("data:image")){fd[kind+"file"]=pv.firstChild.src;}});try{var f=document.getElementById("{{ form.iconfile.id_for_label }}").files[0];if(f&&!fd.iconfile)fd.iconfile=await readFileAsBase64(f);}catch(e){}try{var f=document.getElementById("{{ form.logofile.id_for_label }}").files[0];if(f&&!fd.logofile)fd.logofile=await readFileAsBase64(f);}catch(e){}try{var f=document.getElementById("{{ form.privacyfile.id_for_label }}").files[0];if(f&&!fd.privacyfile)fd.privacyfile=await readFileAsBase64(f);}catch(e){}var jd=JSON.stringify(fd,null,2);var blob=new Blob([jd],{type:"application/json"});var url=URL.createObjectURL(blob);var a=document.createElement("a");a.href=url;a.download=filename+".json";document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);}
 async function readFileAsBase64(file){return new Promise(function(res,rej){var r=new FileReader();r.onload=function(e){res(e.target.result);};r.onerror=function(e){rej(e);};r.readAsDataURL(file);});}
-function loadFormData(){var fi=document.getElementById("fileInput");fi.click();fi.addEventListener('change',function(ev){var f=ev.target.files[0];if(!f)return;var r=new FileReader();r.onload=function(e){try{var fd=JSON.parse(e.target.result);for(var k in fd){var els=document.querySelectorAll('[name="'+k+'"],[id="'+k+'"]');els.forEach(function(el){if(el.type==='radio'){el.checked=(el.value===String(fd[k]));}else if(el.type==='checkbox'){el.checked=fd[k];}else if(el.type!=='file'){el.value=fd[k];}if(k==='iconfile'&&fd[k]){document.getElementById('id_iconbase64').value=fd[k];document.getElementById('icon-preview').innerHTML='<img src="'+fd[k]+'" style="max-width:300px;max-height:60px;">';}if(k==='logofile'&&fd[k]){document.getElementById('id_logobase64').value=fd[k];document.getElementById('logo-preview').innerHTML='<img src="'+fd[k]+'" style="max-width:300px;max-height:60px;">';}if(k==='privacyfile'&&fd[k]){document.getElementById('id_privacybase64').value=fd[k];document.getElementById('privacy-preview').innerHTML='<img src="'+fd[k]+'" style="max-width:300px;max-height:60px;">';}});}}catch(err){alert('加载数据出错，JSON 文件格式无效');}};r.readAsText(f);});}
+function loadFormData(){var fi=document.getElementById("fileInput");fi.click();fi.addEventListener("change",function(ev){var f=ev.target.files[0];if(!f)return;var r=new FileReader();r.onload=function(e){try{var fd=JSON.parse(e.target.result);for(var k in fd){var els=document.querySelectorAll("[name=""+k+'"],[id="'+k+'"]');els.forEach(function(el){if(el.type==="radio"){el.checked=(el.value===String(fd[k]));}else if(el.type==="checkbox"){el.checked=fd[k];}else if(el.type!=="file"){el.value=fd[k];}if(k==="iconfile"&&fd[k]){document.getElementById("id_iconbase64").value=fd[k];document.getElementById("icon-preview").innerHTML='<img src="'+fd[k]+'" style="max-width:300px;max-height:60px;">';}if(k==="logofile"&&fd[k]){document.getElementById("id_logobase64").value=fd[k];document.getElementById("logo-preview").innerHTML='<img src="'+fd[k]+'" style="max-width:300px;max-height:60px;">';}if(k==="privacyfile"&&fd[k]){document.getElementById("id_privacybase64").value=fd[k];document.getElementById("privacy-preview").innerHTML='<img src="'+fd[k]+'" style="max-width:300px;max-height:60px;">';}});}}catch(err){alert("加载数据出错：JSON 文件格式无效");}};r.readAsText(f);});}
+
+
+function clearCompleted(){
+  var cards = document.querySelectorAll(".build-card.build-success, .build-card.build-failed");
+  cards.forEach(function(c){ c.remove(); });
+  saveBuilds();
+}
+
+// ===== Restore builds on page load =====
+loadBuildsOnStartup();
 </script>
 </body>
 </html>
