@@ -451,16 +451,32 @@ def generator_view(request):
                 response = requests.post(url, json=data, headers=headers)
                 #print(response)
                 if response.status_code == 204 or response.status_code == 200:
-                    github_data = response.json()
-                    print(github_data)
+                    github_data = {}
+                    if response.status_code == 200:
+                        try:
+                            github_data = response.json()
+                        except Exception:
+                            pass
                     new_github_run.github_run_id = github_data.get('workflow_run_id')
                     new_github_run.status = "in_progress"
                     new_github_run.save()
 
-                    return render(request, 'waiting.html', {'filename':filename, 'uuid':myuuid, 'status':"Starting generator...please wait", 'platform':platform, 'log_url': github_data.get('html_url')})
+                    log_url = github_data.get('html_url', '')
+
+                    # AJAX: return JSON so the page can show an inline build card
+                    if request.META.get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest':
+                        return JsonResponse({
+                            'uuid': myuuid,
+                            'platform': platform,
+                            'filename': filename,
+                            'status': 'started',
+                            'log_url': log_url,
+                        })
+
+                    return render(request, 'waiting.html', {'filename':filename, 'uuid':myuuid, 'status':"Starting generator...please wait", 'platform':platform, 'log_url': log_url})
                 else:
                     #new_github_run.delete()
-                    return JsonResponse({"error": "GitHub rejected the start request"}, status=500)
+                    return JsonResponse({"error": "GitHub rejected the start request (status %d)" % response.status_code}, status=500)
             except Exception as e:
                 #new_github_run.delete()
                 return JsonResponse({"error": f"Connection error: {str(e)}"}, status=500)
@@ -523,6 +539,70 @@ def check_for_file(request):
             'log_url': github_log_url
         })
 
+
+
+def build_status_json(request):
+    uuid = request.GET.get('uuid')
+    if not uuid:
+        return JsonResponse({'error': 'missing uuid'}, status=400)
+    try:
+        gh_run = GithubRun.objects.get(uuid=uuid)
+    except GithubRun.DoesNotExist:
+        return JsonResponse({'error': 'not found'}, status=404)
+
+    platform = request.GET.get('platform', '')
+    filename = request.GET.get('filename', '')
+
+    # Refresh status from GitHub if not terminal
+    if gh_run.status not in ['success', 'failure', 'cancelled', 'timed_out', 'skipped', 'action_required']:
+        if gh_run.github_run_id:
+            headers = {
+                "Authorization": f"Bearer {_settings.GHBEARER}",
+                "Accept": "application/vnd.github+json"
+            }
+            api_url = f"https://api.github.com/repos/{_settings.GHUSER}/{_settings.REPONAME}/actions/runs/{gh_run.github_run_id}"
+            try:
+                gh_response = requests.get(api_url, headers=headers)
+                if gh_response.status_code == 200:
+                    gh_data = gh_response.json()
+                    if gh_data.get('status') == 'completed':
+                        gh_run.status = gh_data['conclusion']
+                        gh_run.save()
+            except Exception as e:
+                print(f"Error checking GitHub: {e}")
+
+    log_url = ''
+    if gh_run.github_run_id:
+        log_url = f"https://github.com/{_settings.GHUSER}/{_settings.REPONAME}/actions/runs/{gh_run.github_run_id}"
+
+    downloads = []
+    if gh_run.status == 'success':
+        base = f"/download?uuid={uuid}&filename="
+        if platform in ('windows', 'windows-x86'):
+            downloads.append({'name': f'{filename}.exe', 'url': f'{base}{filename}.exe'})
+        elif platform == 'linux':
+            for ext in ('x86_64.deb','aarch64.deb','x86_64.rpm','suse-x86_64.rpm',
+                        'aarch64.rpm','suse-aarch64.rpm','x86_64.pkg.tar.zst',
+                        'aarch64.pkg.tar.zst','x86_64.AppImage','aarch64.AppImage',
+                        'x86_64.flatpak','aarch64.flatpak'):
+                name = f'{filename}-{ext}'
+                downloads.append({'name': name, 'url': f'{base}{name}'})
+        elif platform == 'android':
+            for ext in ('aarch64.apk','x86_64.apk','armv7.apk'):
+                name = f'{filename}-{ext}'
+                downloads.append({'name': name, 'url': f'{base}{name}'})
+        elif platform == 'macos':
+            for ext in ('x86_64.dmg','aarch64.dmg'):
+                name = f'{filename}-{ext}'
+                downloads.append({'name': name, 'url': f'{base}{name}'})
+
+    return JsonResponse({
+        'status': gh_run.status,
+        'platform': platform,
+        'filename': filename,
+        'log_url': log_url,
+        'downloads': downloads,
+    })
 def download(request):
     filename = request.GET['filename']
     uuid = request.GET['uuid']

@@ -1,4 +1,4 @@
-"""
+﻿"""
 URL configuration for rdgen project.
 
 The `urlpatterns` list routes URLs to views. For more information please see:
@@ -26,6 +26,7 @@ urlpatterns = [
     url(r'^$',views.generator_view),
     url(r'^generator',views.generator_view),
     url(r'^check_for_file',views.check_for_file),
+    url(r'^build_status_json',views.build_status_json),
     url(r'^download',views.download),
     url(r'^creategh',views.create_github_run),
     url(r'^updategh',views.update_github_run),
