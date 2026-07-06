@@ -695,6 +695,7 @@ jobs:
           sudo apt-get update -y
           sudo apt-get install -y libarchive-tools libfuse2
           # set-up appimage-builder
+          sudo pip3 install --upgrade pip setuptools
           sudo pip3 install git+https://github.com/rustdesk-org/appimage-builder.git
           # run appimage-builder
           pushd appimage
@@ -803,11 +804,11 @@ jobs:
             git config --global --add safe.directory "*"
             pushd /workspace
             # flatpak deps
-            flatpak --user remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+            flatpak --user --no-daemon remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
             # package
             pushd flatpak
             git clone https://github.com/flathub/shared-modules.git --depth=1
-            flatpak-builder --user --install-deps-from=flathub -y --force-clean --repo=repo ./build ./rustdesk.json
+            flatpak-builder --user --no-daemon --install-deps-from=flathub -y --force-clean --repo=repo ./build ./rustdesk.json
             flatpak build-bundle ./repo ${{ env.filename }}-${{ matrix.job.arch }}.flatpak com.rustdesk.RustDesk
 
       - name: send file to rdgen server
