@@ -1,5 +1,5 @@
 diff --git a/flutter/lib/desktop/widgets/remote_toolbar.dart b/flutter/lib/desktop/widgets/remote_toolbar.dart
-index 34879e5..876fd3a 100644
+index 34879e5..b401b37 100644
 --- a/flutter/lib/desktop/widgets/remote_toolbar.dart
 +++ b/flutter/lib/desktop/widgets/remote_toolbar.dart
 @@ -3346,6 +3346,7 @@ class _DraggableShowHideState extends State<_DraggableShowHide> {
@@ -10,10 +10,10 @@ index 34879e5..876fd3a 100644
          Obx(() => collapse.isTrue
              ? _MinimizedMonitorSwitchButton(id: widget.id, ffi: widget.ffi)
              : const Offstage()),
-@@ -3578,4 +3579,51 @@ class _MinimizedMonitorSwitchButton extends StatelessWidget {
-       );
+@@ -3579,3 +3580,50 @@ class _MinimizedMonitorSwitchButton extends StatelessWidget {
      });
    }
+ }
 +
 +class _CycleMonitorMenu extends StatelessWidget {
 +  final String id;
@@ -52,7 +52,7 @@ index 34879e5..876fd3a 100644
 +            child: Align(
 +                alignment: const Alignment(0.0, -0.4),
 +                child: Text(
-+                  '  ${CurrentDisplayState.find(id).value + 1}/${pi.displays.length}',
++                  "  ${CurrentDisplayState.find(id).value + 1}/${pi.displays.length}",
 +                  style: const TextStyle(
 +                      color: _ToolbarTheme.blueColor, fontSize: 8),
 +                ))),
@@ -61,4 +61,3 @@ index 34879e5..876fd3a 100644
 +  }
 +}
 +
- }
