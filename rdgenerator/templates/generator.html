@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -481,7 +481,7 @@ function pollBuildStatus(uuid,platform,filename){
   var iv=setInterval(function(){
     count++;
     if(count>max){clearInterval(iv);var s=document.getElementById("status-"+uuid);if(s)s.textContent="超时";saveBuilds();return;}
-    fetch("/build_status_json?uuid="+encodeURIComponent(uuid))
+    fetch("/build_status_json?uuid="+encodeURIComponent(uuid)+"&platform="+encodeURIComponent(platform)+"&filename="+encodeURIComponent(filename))
       .then(function(r){return r.json()})
       .then(function(d){
         updateBuildCard(uuid,d);
@@ -500,7 +500,7 @@ document.getElementById("myForm").addEventListener("submit",function(e){
   var origTxt=btn.innerHTML;
   btn.disabled=true;btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> 提交中...';
   var fd=new FormData(this);
-  fetch("/generator",{method:"POST",body:fd,headers:{"X-Requested-With":"XMLHttpRequest"}})
+  fetch("/generator",{method:"POST",body:fd,headers:{"X-Requested-With":"XMLHttpRequest","X-CSRFToken":document.querySelector("[name=csrfmiddlewaretoken]").value}})
     .then(function(r){return r.json()})
     .then(function(data){
       btn.disabled=false;btn.innerHTML=origTxt;

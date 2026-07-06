@@ -5,3 +5,5 @@ gunicorn.conf
 exe/
 temp_zips/
 *.bak
+.env Secrets
+.env_secrets

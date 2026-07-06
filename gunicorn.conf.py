@@ -1,10 +1,28 @@
 import os
 
-# Adjust these values as needed
-bind = "0.0.0.0:8000"  # Host and port for Gunicorn to listen on
-workers = 5  # The number of worker processes for concurrency (adjust based on system resources)
+bind = "0.0.0.0:8000"
+workers = 5
 threads = 6
-activate_base = True  # Activate your virtual environment if applicable
 
-# Path to your Django project's main WSGI application file (usually manage.py)
+# Load secrets from local file (not in git)
+def load_env_file(path):
+    if os.path.exists(path):
+        with open(path) as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith('#') and '=' in line:
+                    key, val = line.split('=', 1)
+                    os.environ.setdefault(key.strip(), val.strip())
+
+load_env_file(os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env_secrets'))
+
+# Export to workers
+raw_env = [
+    "GHUSER=" + os.environ.get("GHUSER", ""),
+    "REPONAME=" + os.environ.get("REPONAME", "rdgen"),
+    "GHBEARER=" + os.environ.get("GHBEARER", ""),
+    "SH_SECRET=" + os.environ.get("SH_SECRET", "secret"),
+    "GENURL=" + os.environ.get("GENURL", ""),
+]
+
 wsgi_app = "rdgen.wsgi.application"

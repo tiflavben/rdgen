@@ -1,4 +1,4 @@
-import io
+﻿import io
 from pathlib import Path
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
@@ -578,23 +578,31 @@ def build_status_json(request):
     downloads = []
     if gh_run.status == 'success':
         base = f"/download?uuid={uuid}&filename="
-        if platform in ('windows', 'windows-x86'):
-            downloads.append({'name': f'{filename}.exe', 'url': f'{base}{filename}.exe'})
-        elif platform == 'linux':
-            for ext in ('x86_64.deb','aarch64.deb','x86_64.rpm','suse-x86_64.rpm',
-                        'aarch64.rpm','suse-aarch64.rpm','x86_64.pkg.tar.zst',
-                        'aarch64.pkg.tar.zst','x86_64.AppImage','aarch64.AppImage',
-                        'x86_64.flatpak','aarch64.flatpak'):
-                name = f'{filename}-{ext}'
-                downloads.append({'name': name, 'url': f'{base}{name}'})
-        elif platform == 'android':
-            for ext in ('aarch64.apk','x86_64.apk','armv7.apk'):
-                name = f'{filename}-{ext}'
-                downloads.append({'name': name, 'url': f'{base}{name}'})
-        elif platform == 'macos':
-            for ext in ('x86_64.dmg','aarch64.dmg'):
-                name = f'{filename}-{ext}'
-                downloads.append({'name': name, 'url': f'{base}{name}'})
+        # Scan actual files in exe/<uuid>/ directory
+        exe_dir = os.path.join('exe', uuid)
+        if os.path.isdir(exe_dir):
+            for f in sorted(os.listdir(exe_dir)):
+                if os.path.isfile(os.path.join(exe_dir, f)):
+                    downloads.append({'name': f, 'url': f'{base}{f}'})
+        # Fallback: if directory is empty or doesn't exist, use expected names
+        if not downloads:
+            if platform in ('windows', 'windows-x86'):
+                downloads.append({'name': f'{filename}.exe', 'url': f'{base}{filename}.exe'})
+            elif platform == 'linux':
+                for ext in ('x86_64.deb','aarch64.deb','x86_64.rpm','suse-x86_64.rpm',
+                            'aarch64.rpm','suse-aarch64.rpm','x86_64.pkg.tar.zst',
+                            'aarch64.pkg.tar.zst','x86_64.AppImage','aarch64.AppImage',
+                            'x86_64.flatpak','aarch64.flatpak'):
+                    name = f'{filename}-{ext}'
+                    downloads.append({'name': name, 'url': f'{base}{name}'})
+            elif platform == 'android':
+                for ext in ('aarch64.apk','x86_64.apk','armv7.apk'):
+                    name = f'{filename}-{ext}'
+                    downloads.append({'name': name, 'url': f'{base}{name}'})
+            elif platform == 'macos':
+                for ext in ('x86_64.dmg','aarch64.dmg'):
+                    name = f'{filename}-{ext}'
+                    downloads.append({'name': name, 'url': f'{base}{name}'})
 
     return JsonResponse({
         'status': gh_run.status,
@@ -783,3 +791,4 @@ def get_zip(request):
         })
 
     return response
+
