@@ -1,0 +1,101 @@
+kind: pipeline
+type: docker
+name: build-linux
+
+platform:
+  os: linux
+  arch: amd64
+
+trigger:
+  branch:
+    - master
+  event:
+    - promote
+    - custom
+    - push
+
+environment:
+  GHUSER:
+    from_secret: GHUSER
+  GHBEARER:
+    from_secret: GHBEARER
+  GENURL:
+    from_secret: GENURL
+  SH_SECRET:
+    from_secret: SH_SECRET
+  ZIP_PASSWORD:
+    from_secret: ZIP_PASSWORD
+  REPONAME: rdgen
+  GHBRANCH: master
+  VERSION: master
+  RUST_VERSION: 1.75
+  UPLOAD_ARTIFACT: true
+  VCPKG_COMMIT_ID: 120deac3062162151622ca4860575a33844ba10b
+
+steps:
+  - name: clone-rustdesk
+    image: rustdeskorg/rustdesk-builder:latest
+    commands:
+      - git clone --depth 1 --branch master https://github.com/rustdesk/rustdesk.git /workspace/rustdesk
+      - cd /workspace/rustdesk
+      - submodule update --init --recursive --depth 1
+
+  - name: apply-patches
+    image: rustdeskorg/rustdesk-builder:latest
+    commands:
+      - cd /workspace/rustdesk
+      - echo "Applying custom patches..."
+
+  - name: build-x86_64
+    image: rustdeskorg/rustdesk-builder:latest
+    commands:
+      - cd /workspace/rustdesk
+      - cargo build --release --target x86_64-unknown-linux-gnu
+      - echo "Build x86_64 complete"
+
+---
+kind: pipeline
+type: docker
+name: build-windows
+
+platform:
+  os: windows
+  arch: amd64
+
+trigger:
+  branch:
+    - master
+  event:
+    - promote
+    - custom
+
+steps:
+  - name: placeholder
+    image: mcr.microsoft.com/windows/servercore:ltsc2019
+    commands:
+      - echo "Windows build placeholder"
+
+---
+kind: pipeline
+type: docker
+name: build-android
+
+platform:
+  os: linux
+  arch: amd64
+
+trigger:
+  branch:
+    - master
+  event:
+    - promote
+    - custom
+
+node:
+  type: android
+
+steps:
+  - name: placeholder
+    image: rustdeskorg/rustdesk-android-builder:latest
+    commands:
+      - echo "Android build placeholder"
