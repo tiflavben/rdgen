@@ -6,13 +6,16 @@ platform:
   os: linux
   arch: amd64
 
+node:
+  type: linux
+
 trigger:
   branch:
     - master
   event:
+    - push
     - promote
     - custom
-    - push
 
 environment:
   GHUSER:
@@ -62,18 +65,39 @@ platform:
   os: windows
   arch: amd64
 
+node:
+  type: windows
+
 trigger:
   branch:
     - master
   event:
+    - push
     - promote
     - custom
 
+environment:
+  GHUSER:
+    from_secret: GHUSER
+  GHBEARER:
+    from_secret: GHBEARER
+  GENURL:
+    from_secret: GENURL
+  SH_SECRET:
+    from_secret: SH_SECRET
+  ZIP_PASSWORD:
+    from_secret: ZIP_PASSWORD
+  REPONAME: rdgen
+  GHBRANCH: master
+  VERSION: master
+
 steps:
-  - name: placeholder
-    image: mcr.microsoft.com/windows/servercore:ltsc2019
+  - name: clone-rustdesk
+    image: rustdeskorg/rustdesk-builder:latest
     commands:
-      - echo "Windows build placeholder"
+      - git clone --depth 1 --branch master https://github.com/rustdesk/rustdesk.git C:\\workspace\\rustdesk
+      - cd C:\\workspace\\rustdesk
+      - echo "Windows build setup complete"
 
 ---
 kind: pipeline
@@ -84,18 +108,36 @@ platform:
   os: linux
   arch: amd64
 
+node:
+  type: android
+
 trigger:
   branch:
     - master
   event:
+    - push
     - promote
     - custom
 
-node:
-  type: android
+environment:
+  GHUSER:
+    from_secret: GHUSER
+  GHBEARER:
+    from_secret: GHBEARER
+  GENURL:
+    from_secret: GENURL
+  SH_SECRET:
+    from_secret: SH_SECRET
+  ZIP_PASSWORD:
+    from_secret: ZIP_PASSWORD
+  REPONAME: rdgen
+  GHBRANCH: master
+  VERSION: master
 
 steps:
-  - name: placeholder
+  - name: clone-rustdesk
     image: rustdeskorg/rustdesk-android-builder:latest
     commands:
-      - echo "Android build placeholder"
+      - git clone --depth 1 --branch master https://github.com/rustdesk/rustdesk.git /workspace/rustdesk
+      - cd /workspace/rustdesk
+      - echo "Android build setup complete"
