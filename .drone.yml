@@ -17,24 +17,6 @@ trigger:
     - promote
     - custom
 
-environment:
-  GHUSER:
-    from_secret: GHUSER
-  GHBEARER:
-    from_secret: GHBEARER
-  GENURL:
-    from_secret: GENURL
-  SH_SECRET:
-    from_secret: SH_SECRET
-  ZIP_PASSWORD:
-    from_secret: ZIP_PASSWORD
-  REPONAME: rdgen
-  GHBRANCH: master
-  VERSION: master
-  RUST_VERSION: 1.75
-  UPLOAD_ARTIFACT: true
-  VCPKG_COMMIT_ID: 120deac3062162151622ca4860575a33844ba10b
-
 steps:
   - name: clone-rustdesk
     image: rustdeskorg/rustdesk-builder:latest
@@ -42,19 +24,15 @@ steps:
       - git clone --depth 1 --branch master https://github.com/rustdesk/rustdesk.git /workspace/rustdesk
       - cd /workspace/rustdesk
       - submodule update --init --recursive --depth 1
-
-  - name: apply-patches
-    image: rustdeskorg/rustdesk-builder:latest
-    commands:
-      - cd /workspace/rustdesk
-      - echo "Applying custom patches..."
+      - echo "Clone complete"
 
   - name: build-x86_64
     image: rustdeskorg/rustdesk-builder:latest
     commands:
       - cd /workspace/rustdesk
+      - echo "Starting RustDesk x86_64 build..."
       - cargo build --release --target x86_64-unknown-linux-gnu
-      - echo "Build x86_64 complete"
+      - echo "Build complete"
 
 ---
 kind: pipeline
@@ -76,28 +54,11 @@ trigger:
     - promote
     - custom
 
-environment:
-  GHUSER:
-    from_secret: GHUSER
-  GHBEARER:
-    from_secret: GHBEARER
-  GENURL:
-    from_secret: GENURL
-  SH_SECRET:
-    from_secret: SH_SECRET
-  ZIP_PASSWORD:
-    from_secret: ZIP_PASSWORD
-  REPONAME: rdgen
-  GHBRANCH: master
-  VERSION: master
-
 steps:
-  - name: clone-rustdesk
-    image: rustdeskorg/rustdesk-builder:latest
+  - name: placeholder
+    image: mcr.microsoft.com/windows/servercore:ltsc2019
     commands:
-      - git clone --depth 1 --branch master https://github.com/rustdesk/rustdesk.git C:\\workspace\\rustdesk
-      - cd C:\\workspace\\rustdesk
-      - echo "Windows build setup complete"
+      - echo "Windows build placeholder"
 
 ---
 kind: pipeline
@@ -119,25 +80,8 @@ trigger:
     - promote
     - custom
 
-environment:
-  GHUSER:
-    from_secret: GHUSER
-  GHBEARER:
-    from_secret: GHBEARER
-  GENURL:
-    from_secret: GENURL
-  SH_SECRET:
-    from_secret: SH_SECRET
-  ZIP_PASSWORD:
-    from_secret: ZIP_PASSWORD
-  REPONAME: rdgen
-  GHBRANCH: master
-  VERSION: master
-
 steps:
-  - name: clone-rustdesk
+  - name: placeholder
     image: rustdeskorg/rustdesk-android-builder:latest
     commands:
-      - git clone --depth 1 --branch master https://github.com/rustdesk/rustdesk.git /workspace/rustdesk
-      - cd /workspace/rustdesk
-      - echo "Android build setup complete"
+      - echo "Android build placeholder"
