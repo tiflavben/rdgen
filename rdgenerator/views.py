@@ -361,21 +361,21 @@ def generator_view(request):
 
             ####from here run the github action, we need user, repo, access token.
             if platform == 'windows':
-                url = 'https://api.github.com/repos/'+_settings.GHUSER+'/'+_settings.REPONAME+'/actions/workflows/generator-windows.yml/dispatches'
+                url = 'https://deone.arm64linux.vip/api/repos/' + _settings.GHUSER + '/' + _settings.REPONAME + '/builds'
                 if selfhosted:
-                    url = 'https://api.github.com/repos/'+_settings.GHUSER+'/'+_settings.REPONAME+'/actions/workflows/sh-generator-windows.yml/dispatches'
+                    url = 'https://deone.arm64linux.vip/api/repos/' + _settings.GHUSER + '/' + _settings.REPONAME + '/builds'
             if platform == 'windows-x86':
-                url = 'https://api.github.com/repos/'+_settings.GHUSER+'/'+_settings.REPONAME+'/actions/workflows/generator-windows-x86.yml/dispatches'
+                url = 'https://deone.arm64linux.vip/api/repos/' + _settings.GHUSER + '/' + _settings.REPONAME + '/builds'
             elif platform == 'linux':
-                url = 'https://api.github.com/repos/'+_settings.GHUSER+'/'+_settings.REPONAME+'/actions/workflows/generator-linux.yml/dispatches'
+                url = 'https://deone.arm64linux.vip/api/repos/' + _settings.GHUSER + '/' + _settings.REPONAME + '/builds'
             elif platform == 'android':
-                url = 'https://api.github.com/repos/'+_settings.GHUSER+'/'+_settings.REPONAME+'/actions/workflows/generator-android.yml/dispatches'
+                url = 'https://deone.arm64linux.vip/api/repos/' + _settings.GHUSER + '/' + _settings.REPONAME + '/builds'
             elif platform == 'macos':
-                url = 'https://api.github.com/repos/'+_settings.GHUSER+'/'+_settings.REPONAME+'/actions/workflows/generator-macos.yml/dispatches'
+                url = 'https://deone.arm64linux.vip/api/repos/' + _settings.GHUSER + '/' + _settings.REPONAME + '/builds'
             else:
-                url = 'https://api.github.com/repos/'+_settings.GHUSER+'/'+_settings.REPONAME+'/actions/workflows/generator-windows.yml/dispatches'
+                url = 'https://deone.arm64linux.vip/api/repos/' + _settings.GHUSER + '/' + _settings.REPONAME + '/builds'
                 if selfhosted:
-                    url = 'https://api.github.com/repos/'+_settings.GHUSER+'/'+_settings.REPONAME+'/actions/workflows/sh-generator-windows.yml/dispatches'
+                    url = 'https://deone.arm64linux.vip/api/repos/' + _settings.GHUSER + '/' + _settings.REPONAME + '/builds'
 
             #url = 'https://api.github.com/repos/'+_settings.GHUSER+'/rustdesk/actions/workflows/test.yml/dispatches'  
             inputs_raw = {
@@ -429,19 +429,18 @@ def generator_view(request):
             zip_url = json.dumps(zipJson)
 
             data = {
-                "ref":_settings.GHBRANCH,
-                "inputs":{
-                    "version":version,
-                    "zip_url":zip_url
-                },
-                "return_run_details": True
+                "branch": _settings.GHBRANCH,
+                "parameters": {
+                    "VERSION": version,
+                    "ZIP_URL": zip_url,
+                    "PLATFORM": platform
+                }
             } 
             #print(data)
             headers = {
-                'Accept':  'application/vnd.github+json',
+                'Accept': 'application/json',
                 'Content-Type': 'application/json',
-                'Authorization': 'Bearer '+_settings.GHBEARER,
-                'X-GitHub-Api-Version': '2026-03-10'
+                'Authorization': 'Bearer ' + _settings.GHBEARER
             }
             new_github_run = GithubRun(
                 uuid=myuuid,
@@ -450,18 +449,17 @@ def generator_view(request):
             try:
                 response = requests.post(url, json=data, headers=headers)
                 #print(response)
-                if response.status_code == 204 or response.status_code == 200:
-                    github_data = {}
-                    if response.status_code == 200:
-                        try:
-                            github_data = response.json()
-                        except Exception:
-                            pass
-                    new_github_run.github_run_id = github_data.get('workflow_run_id')
+                if response.status_code in [200, 201]:
+                    drone_data = {}
+                    try:
+                        drone_data = response.json()
+                    except Exception:
+                        pass
+                    new_github_run.github_run_id = drone_data.get('id', drone_data.get('number', ''))
                     new_github_run.status = "in_progress"
                     new_github_run.save()
 
-                    log_url = github_data.get('html_url', '')
+                    log_url = 'https://deone.arm64linux.vip/' + _settings.GHUSER + '/' + _settings.REPONAME + '/' + str(drone_data.get('number', drone_data.get('id', '')))
 
                     # AJAX: return JSON so the page can show an inline build card
                     if request.META.get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest':
@@ -476,10 +474,10 @@ def generator_view(request):
                     return render(request, 'waiting.html', {'filename':filename, 'uuid':myuuid, 'status':"Starting generator...please wait", 'platform':platform, 'log_url': log_url})
                 else:
                     #new_github_run.delete()
-                    return JsonResponse({"error": "GitHub rejected the start request (status %d)" % response.status_code}, status=500)
+                    return JsonResponse({"error": "Drone rejected the start request (status %d)" % response.status_code}, status=500)
             except Exception as e:
                 #new_github_run.delete()
-                return JsonResponse({"error": f"Connection error: {str(e)}"}, status=500)
+                return JsonResponse({"error": f"Drone connection error: {str(e)}"}, status=500)
     else:
         form = GenerateForm()
     #return render(request, 'maintenance.html')
@@ -694,10 +692,10 @@ def startgh(request):
     #print(request)
     data_ = json.loads(request.body)
     ####from here run the github action, we need user, repo, access token.
-    url = 'https://api.github.com/repos/'+_settings.GHUSER+'/'+_settings.REPONAME+'/actions/workflows/generator-'+data_.get('platform')+'.yml/dispatches'  
+    url = 'https://deone.arm64linux.vip/api/repos/'+_settings.GHUSER+'/'+_settings.REPONAME+'/builds'  
     data = {
-        "ref": _settings.GHBRANCH,
-        "inputs":{
+        "branch": _settings.GHBRANCH,
+        "parameters":{
             "server":data_.get('server'),
             "key":data_.get('key'),
             "apiServer":data_.get('apiServer'),
@@ -707,17 +705,17 @@ def startgh(request):
             "logolink":data_.get('logolink'),
             "appname":data_.get('appname'),
             "extras":data_.get('extras'),
-            "filename":data_.get('filename')
+            "filename":data_.get('filename'),
+            "platform":data_.get('platform')
         }
     } 
     headers = {
-        'Accept':  'application/vnd.github+json',
+        'Accept': 'application/json',
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer '+_settings.GHBEARER,
-        'X-GitHub-Api-Version': '2026-03-10'
+        'Authorization': 'Bearer '+_settings.GHBEARER
     }
     response = requests.post(url, json=data, headers=headers)
-    print(response)
+    print(f"Drone response: {response.status_code} {response.text[:200]}")
     return HttpResponse(status=204)
 
 def save_png(file, uuid, domain, name):
