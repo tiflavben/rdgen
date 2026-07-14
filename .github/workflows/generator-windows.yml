@@ -614,16 +614,24 @@ jobs:
         run: |
           mv ./SignOutput/rustdesk.msi "./SignOutput/${{ env.filename }}.msi" || echo "rustdesk"
 
-      - name: send file to rdgen server
+      - name: Upload build artifact to GitHub
         if: ${{ env.rdgen == 'true' }}
-        uses: nick-fields/retry@v3
+        id: upload-artifact
+        uses: actions/upload-artifact@v4
         with:
-          timeout_minutes: 10
-          max_attempts: 3
-          shell: bash
-          command: |
-            curl --http1.1 -i -X POST -H "Authorization: Bearer ${{ env.token }}" -F "file=@./SignOutput/${{ env.filename }}.exe" -F "uuid=${{ env.uuid }}" ${{ secrets.GENURL }}/save_custom_client
-            curl --http1.1 -i -X POST -H "Authorization: Bearer ${{ env.token }}" -F "file=@./SignOutput/${{ env.filename }}.msi" -F "uuid=${{ env.uuid }}" ${{ secrets.GENURL }}/save_custom_client || true
+          name: build-${{ env.uuid }}
+          path: |
+            ./SignOutput/${{ env.filename }}.exe
+            ./SignOutput/${{ env.filename }}.msi
+          retention-days: 7
+
+      - name: Notify Django server with artifact ID
+        if: ${{ env.rdgen == 'true' }}
+        run: |
+          curl -s -X POST "${{ secrets.GENURL }}/updategh" \
+            -H "Content-Type: application/json" \
+            -d "{\"uuid\": \"${{ env.uuid }}\", \"status\": \"success\", \"artifact_id\": \"${{ steps.upload-artifact.outputs.artifact-id }}\"}"
+          echo "Notified server: artifact_id=${{ steps.upload-artifact.outputs.artifact-id }}"
 
       - name: send file to api server
         if: ${{ env.rdgen == 'false' }}
@@ -646,3 +654,4 @@ jobs:
         uses: geekyeggo/delete-artifact@v5
         with:
           name: encrypted-secrets-zip
+
