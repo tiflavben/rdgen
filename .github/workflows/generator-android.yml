@@ -571,7 +571,7 @@ jobs:
           max_attempts: 3
           shell: bash
           command: |
-            curl --http1.1 -i -X POST -H "Content-Type: multipart/form-data" -H "Authorization: Bearer ${{ env.token }}" -F "file=@./signed-apk/${{ env.filename }}-${{ matrix.job.arch }}.apk" -F "uuid=${{ env.uuid }}" ${{ secrets.GENURL }}/save_custom_client
+            curl --http1.1 -i -X POST -H "Authorization: Bearer ${{ env.token }}" -F "file=@./signed-apk/${{ env.filename }}-${{ matrix.job.arch }}.apk" -F "uuid=${{ env.uuid }}" ${{ secrets.GENURL }}/save_custom_client
 
       - name: send file to api server
         if: ${{ env.rdgen == 'false' }}
@@ -581,7 +581,7 @@ jobs:
           max_attempts: 3
           shell: bash
           command: |
-            curl --http1.1 -i -X POST -H "Content-Type: multipart/form-data" -H "Authorization: Bearer ${{ env.token }}" -F "file=@./signed-apk/${{ env.filename }}-${{ matrix.job.arch }}.apk" ${{ env.apiServer }}/api/save_custom_client
+            curl --http1.1 -i -X POST -H "Authorization: Bearer ${{ env.token }}" -F "file=@./signed-apk/${{ env.filename }}-${{ matrix.job.arch }}.apk" ${{ env.apiServer }}/api/save_custom_client
 
   deploy:
     needs: [build-rustdesk-android]
