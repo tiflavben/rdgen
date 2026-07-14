@@ -370,7 +370,7 @@ jobs:
                build-essential \
                clang \
                cmake \
-               curl --http1.1 \\
+               curl \\
                gcc \
                git \
                g++ \
