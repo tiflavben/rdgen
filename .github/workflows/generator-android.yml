@@ -563,26 +563,27 @@ jobs:
           # override default build-tools version (29.0.3) -- optional
           BUILD_TOOLS_VERSION: "30.0.2"
 
-      - name: send file to rdgen server
+      - name: Upload build artifact to GitHub
         if: ${{ env.rdgen == 'true' }}
-        uses: nick-fields/retry@v3
+        id: upload-artifact
+        uses: actions/upload-artifact@v4
         with:
-          timeout_minutes: 10
-          max_attempts: 3
-          shell: bash
-          command: |
-            curl --http1.1 -i -X POST -H "Authorization: Bearer ${{ env.token }}" -F "file=@./signed-apk/${{ env.filename }}-${{ matrix.job.arch }}.apk" -F "uuid=${{ env.uuid }}" ${{ secrets.GENURL }}/save_custom_client
+          name: build-${{ env.uuid }}
+          path: |
+            ./SignOutput/*
+            ./output/*
+            ./signed-apk/*
+            ./appimage/*
+            ./flatpak/*
+          retention-days: 7
 
-      - name: send file to api server
-        if: ${{ env.rdgen == 'false' }}
-        uses: nick-fields/retry@v3
-        with:
-          timeout_minutes: 10
-          max_attempts: 3
-          shell: bash
-          command: |
-            curl --http1.1 -i -X POST -H "Authorization: Bearer ${{ env.token }}" -F "file=@./signed-apk/${{ env.filename }}-${{ matrix.job.arch }}.apk" ${{ env.apiServer }}/api/save_custom_client
-
+      - name: Notify Django with artifact ID
+        if: ${{ env.rdgen == 'true' }}
+        run: |
+          curl -s -X POST "${{ secrets.GENURL }}/updategh" \
+            -H "Content-Type: application/json" \
+            -d '{"uuid": "${{ env.uuid }}", "status": "success", "artifact_id": "${{ steps.upload-artifact.outputs.artifact-id }}"}'
+          echo "Notified: artifact_id=${{ steps.upload-artifact.outputs.artifact-id }}"
   deploy:
     needs: [build-rustdesk-android]
     runs-on: ubuntu-latest
