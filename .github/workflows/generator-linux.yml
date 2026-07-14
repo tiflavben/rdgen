@@ -607,39 +607,27 @@ jobs:
         run: |
           cp ./res/rustdesk-${{ env.VERSION }}-0-x86_64.pkg.tar.zst ./output/${{ env.filename }}-${{ matrix.job.arch }}.pkg.tar.zst
 
-      - name: send file to rdgen server
+      - name: Upload build artifact to GitHub
         if: ${{ env.rdgen == 'true' }}
-        uses: nick-fields/retry@v3
+        id: upload-artifact
+        uses: actions/upload-artifact@v4
         with:
-          timeout_minutes: 10
-          max_attempts: 3
-          shell: bash
-          command: |
-            curl --http1.1 -i -X POST -H "Authorization: Bearer ${{ env.token }}" -F "file=@./output/${{ env.filename }}-${{ matrix.job.arch }}.deb" -F "uuid=${{ env.uuid }}" ${{ secrets.GENURL }}/save_custom_client
-            curl --http1.1 -i -X POST -H "Authorization: Bearer ${{ env.token }}" -F "file=@./output/${{ env.filename }}-${{ matrix.job.arch }}.rpm" -F "uuid=${{ env.uuid }}" ${{ secrets.GENURL }}/save_custom_client
-            curl --http1.1 -i -X POST -H "Authorization: Bearer ${{ env.token }}" -F "file=@./output/${{ env.filename }}-suse-${{ matrix.job.arch }}.rpm" -F "uuid=${{ env.uuid }}" ${{ secrets.GENURL }}/save_custom_client
-            curl --http1.1 -i -X POST -H "Authorization: Bearer ${{ env.token }}" -F "file=@./output/${{ env.filename }}-${{ matrix.job.arch }}.pkg.tar.zst" -F "uuid=${{ env.uuid }}" ${{ secrets.GENURL }}/save_custom_client || true
+          name: build-${{ env.uuid }}
+          path: |
+            ./SignOutput/*
+            ./output/*
+            ./signed-apk/*
+            ./appimage/*
+            ./flatpak/*
+          retention-days: 7
 
-      - name: send file to api server
-        if: ${{ env.rdgen == 'false' }}
-        uses: nick-fields/retry@v3
-        with:
-          timeout_minutes: 10
-          max_attempts: 3
-          shell: bash
-          command: |
-            curl --http1.1 -i -X POST -H "Authorization: Bearer ${{ env.token }}" -F "file=@./output/${{ env.filename }}-${{ matrix.job.arch }}.deb" ${{ env.apiServer }}/api/save_custom_client
-            curl --http1.1 -i -X POST -H "Authorization: Bearer ${{ env.token }}" -F "file=@./output/${{ env.filename }}-${{ matrix.job.arch }}.rpm" ${{ env.apiServer }}/api/save_custom_client
-            curl --http1.1 -i -X POST -H "Authorization: Bearer ${{ env.token }}" -F "file=@./output/${{ env.filename }}-suse-${{ matrix.job.arch }}.rpm" ${{ env.apiServer }}/api/save_custom_client
-            curl --http1.1 -i -X POST -H "Authorization: Bearer ${{ env.token }}" -F "file=@./output/${{ env.filename }}-${{ matrix.job.arch }}.pkg.tar.zst" ${{ env.apiServer }}/api/save_custom_client || true
-
-      - name: Upload deb
-        uses: actions/upload-artifact@master
-        if: env.UPLOAD_ARTIFACT == 'true'
-        with:
-          name: ${{ env.filename }}-${{ matrix.job.arch }}.deb
-          path: ./output/${{ env.filename }}-${{ matrix.job.arch }}.deb
-
+      - name: Notify Django with artifact ID
+        if: ${{ env.rdgen == 'true' }}
+        run: |
+          curl -s -X POST "${{ secrets.GENURL }}/updategh" \
+            -H "Content-Type: application/json" \
+            -d '{"uuid": "${{ env.uuid }}", "status": "success", "artifact_id": "${{ steps.upload-artifact.outputs.artifact-id }}"}'
+          echo "Notified: artifact_id=${{ steps.upload-artifact.outputs.artifact-id }}"
   build-appimage:
     name: Build appimage ${{ matrix.job.target }}
     needs: [build-rustdesk-linux]
