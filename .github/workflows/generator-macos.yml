@@ -577,8 +577,8 @@ jobs:
             ls -la
             
             # Rename RustDesk.app to the custom app name first
-            if [ -d "RustDesk.app" ]; then
-              # First rename the app if it's still called RustDesk.app
+            if [ -d "RustDesk.app" ] && [ "RustDesk.app" != "${{ env.appname }}.app" ]; then
+              # Rename the app only if appname differs from RustDesk
               mv "RustDesk.app" "${{ env.appname }}.app"
               echo "Renamed RustDesk.app to ${{ env.appname }}.app"
             fi
@@ -633,8 +633,8 @@ jobs:
           echo "Directory contents:"
           ls -la
           # Find the actual .app bundle
-          if [ -d "RustDesk.app" ]; then
-            # First rename the app if it's still called RustDesk.app
+          if [ -d "RustDesk.app" ] && [ "RustDesk.app" != "${{ env.appname }}.app" ]; then
+            # Rename the app only if appname differs from RustDesk
             mv "RustDesk.app" "${{ env.appname }}.app"
           fi
           if [ ! -d "${{ env.appname }}.app" ]; then
