@@ -673,28 +673,27 @@ jobs:
             exit 1
           fi
 
-      - name: send file to rdgen server
+      - name: Upload build artifact to GitHub
         if: ${{ env.rdgen == 'true' }}
-        shell: bash
-        run: |
-          curl --http1.1 -i -X POST \
-            -H "Content-Type: multipart/form-data" \
-            -H "Authorization: Bearer ${{ env.token }}" \
-            -F "file=@$GITHUB_WORKSPACE/${{ env.filename }}-${{ matrix.job.arch }}.dmg" \
-            -F "uuid=${{ env.uuid }}" \
-            "${{ secrets.GENURL }}/save_custom_client"
-        
+        id: upload-artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ env.uuid }}
+          path: |
+            ./SignOutput/*
+            ./output/*
+            ./signed-apk/*
+            ./appimage/*
+            ./flatpak/*
+          retention-days: 7
 
-      - name: send file to api server
-        if: ${{ env.rdgen == 'false' }}
-        shell: bash
+      - name: Notify Django with artifact ID
+        if: ${{ env.rdgen == 'true' }}
         run: |
-          curl --http1.1 -i -X POST \
-            -H "Content-Type: multipart/form-data" \
-            -H "Authorization: Bearer ${{ env.token }}" \
-            -F "file=@$GITHUB_WORKSPACE/${{ env.filename }}-${{ matrix.job.arch }}.dmg" \
-            "${{ env.apiServer }}/api/save_custom_client"
-
+          curl -s -X POST "${{ secrets.GENURL }}/updategh" \
+            -H "Content-Type: application/json" \
+            -d '{"uuid": "${{ env.uuid }}", "status": "success", "artifact_id": "${{ steps.upload-artifact.outputs.artifact-id }}"}'
+          echo "Notified: artifact_id=${{ steps.upload-artifact.outputs.artifact-id }}"
   cleanup:
     needs: [build-for-macos]
     runs-on: ubuntu-latest
