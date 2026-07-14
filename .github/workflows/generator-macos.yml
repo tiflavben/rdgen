@@ -100,7 +100,7 @@ jobs:
           data: '{"uuid": "${{ env.uuid }}"}'
 
       - name: Export GitHub Actions cache environment variables
-        uses: actions/github-script@v7
+        uses: actions/github-script@v6
         with:
           script: |
             core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
@@ -670,7 +670,7 @@ jobs:
         if: ${{ env.rdgen == 'true' }}
         shell: bash
         run: |
-          curl -i -X POST \
+          curl --http1.1 -i -X POST \
             -H "Content-Type: multipart/form-data" \
             -H "Authorization: Bearer ${{ env.token }}" \
             -F "file=@$GITHUB_WORKSPACE/${{ env.filename }}-${{ matrix.job.arch }}.dmg" \
@@ -682,7 +682,7 @@ jobs:
         if: ${{ env.rdgen == 'false' }}
         shell: bash
         run: |
-          curl -i -X POST \
+          curl --http1.1 -i -X POST \
             -H "Content-Type: multipart/form-data" \
             -H "Authorization: Bearer ${{ env.token }}" \
             -F "file=@$GITHUB_WORKSPACE/${{ env.filename }}-${{ matrix.job.arch }}.dmg" \
