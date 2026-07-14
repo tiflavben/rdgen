@@ -1,4 +1,4 @@
-﻿import io
+import io
 from pathlib import Path
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
@@ -29,13 +29,6 @@ def generator_view(request):
                 selfhosted = False
             platform = form.cleaned_data['platform']
             version = form.cleaned_data['version']
-
-            # Validate: Windows builds cannot use 'master' version (NuGet requires valid version string)
-            if platform in ('windows', 'windows-x86') and version == 'master':
-                return render(request, 'failure.html', {
-                    'error': 'Windows 版本不支持使用 nightly(master) 构建，请选择 1.4.8 或更高版本。'
-                })
-
             delayFix = form.cleaned_data['delayFix']
             cycleMonitor = form.cleaned_data['cycleMonitor']
             xOffline = form.cleaned_data['xOffline']
@@ -57,126 +50,6 @@ def generator_view(request):
             if not downloadLink:
                 downloadLink = "https://rustdesk.com/download"
             direction = form.cleaned_data['direction']
-            autoReconnect = form.cleaned_data['autoReconnect']
-            disableAudio = form.cleaned_data['disableAudio']
-            disableClipboard = form.cleaned_data['disableClipboard']
-            disableFileTransfer = form.cleaned_data['disableFileTransfer']
-            disableRemoteRestart = form.cleaned_data['disableRemoteRestart']
-            disableRecording = form.cleaned_data['disableRecording']
-            enableBluetooth = form.cleaned_data['enableBluetooth']
-            enableTcpTunneling = form.cleaned_data['enableTcpTunneling']
-            useRendezvousSignature = form.cleaned_data['useRendezvousSignature']
-            customFps = form.cleaned_data['customFps']
-            disableOpenGL = form.cleaned_data['disableOpenGL']
-            removeToolbox = form.cleaned_data['removeToolbox']
-            removeNewVersionButton = form.cleaned_data['removeNewVersionButton']
-            disableChat = form.cleaned_data['disableChat']
-            disableSessionReuse = form.cleaned_data['disableSessionReuse']
-            autoRecordIncoming = form.cleaned_data['autoRecordIncoming']
-            autoRecordOutgoing = form.cleaned_data['autoRecordOutgoing']
-            enableUdpPunch = form.cleaned_data['enableUdpPunch']
-            disableUdp = form.cleaned_data['disableUdp']
-            enableIpv6 = form.cleaned_data['enableIpv6']
-            https = form.cleaned_data['https']
-            websocket = form.cleaned_data['websocket']
-            alwaysSoftwareRender = form.cleaned_data['alwaysSoftwareRender']
-            allowLogonScreenPassword = form.cleaned_data['allowLogonScreenPassword']
-            numericOneTimePassword = form.cleaned_data['numericOneTimePassword']
-            allowOnlyConnOpen = form.cleaned_data['allowOnlyConnOpen']
-            trustedDevices = form.cleaned_data['trustedDevices']
-            autoUpdate = form.cleaned_data['autoUpdate']
-            hwcodec = form.cleaned_data['hwcodec']
-            abr = form.cleaned_data['abr']
-            directXCapture = form.cleaned_data['directXCapture']
-            secureCommunication = form.cleaned_data['secureCommunication']
-            language = form.cleaned_data['language']
-
-            allowHideRemoteWindow = form.cleaned_data['allowHideRemoteWindow']
-            enableTray = form.cleaned_data['enableTray']
-            oneWayClipboard = form.cleaned_data['oneWayClipboard']
-            oneWayFileTransfer = form.cleaned_data['oneWayFileTransfer']
-            disableTransferPause = form.cleaned_data['disableTransferPause']
-            disableTemporaryPassword = form.cleaned_data['disableTemporaryPassword']
-            allowOverrideCursor = form.cleaned_data['allowOverrideCursor']
-            allowBlockInput = form.cleaned_data['allowBlockInput']
-            allowLockScreenAfterDisconnect = form.cleaned_data['allowLockScreenAfterDisconnect']
-            allowAutoRecord = form.cleaned_data['allowAutoRecord']
-            allowAutoDisconnect = form.cleaned_data['allowAutoDisconnect']
-            allowRejectSessions = form.cleaned_data['allowRejectSessions']
-            allowRejectInverse = form.cleaned_data['allowRejectInverse']
-            allowReportClipboard = form.cleaned_data['allowReportClipboard']
-            allowWaitForAdmission = form.cleaned_data['allowWaitForAdmission']
-            allowCaptureScreen = form.cleaned_data['allowCaptureScreen']
-            allowScreenshot = form.cleaned_data['allowScreenshot']
-            allowVoiceCall = form.cleaned_data['allowVoiceCall']
-            allowInputEvents = form.cleaned_data['allowInputEvents']
-            allowClipboardSync = form.cleaned_data['allowClipboardSync']
-            allowFileDrop = form.cleaned_data['allowFileDrop']
-            allowPointer = form.cleaned_data['allowPointer']
-            allowWindowDrag = form.cleaned_data['allowWindowDrag']
-            allowIdleInhibit = form.cleaned_data['allowIdleInhibit']
-            proxyUrl = form.cleaned_data['proxyUrl']
-            proxyUsername = form.cleaned_data['proxyUsername']
-            proxyPassword = form.cleaned_data['proxyPassword']
-            relayServer = form.cleaned_data['relayServer']
-            whitelist = form.cleaned_data['whitelist']
-            directServer = form.cleaned_data['directServer']
-            directAccessPort = form.cleaned_data['directAccessPort']
-            hideSecurity = form.cleaned_data['hideSecurity']
-            hideNetwork = form.cleaned_data['hideNetwork']
-            hideServer = form.cleaned_data['hideServer']
-            hideProxy = form.cleaned_data['hideProxy']
-            hideWebsocket = form.cleaned_data['hideWebsocket']
-            hideRemotePrinter = form.cleaned_data['hideRemotePrinter']
-            hideTray = form.cleaned_data['hideTray']
-            hideHelpCards = form.cleaned_data['hideHelpCards']
-            hideUsernameOnCard = form.cleaned_data['hideUsernameOnCard']
-            hideStopService = form.cleaned_data['hideStopService']
-            d3dRender = form.cleaned_data['d3dRender']
-            textureRender = form.cleaned_data['textureRender']
-            enableFileCopyPaste = form.cleaned_data['enableFileCopyPaste']
-            enableConfirmClosingTabs = form.cleaned_data['enableConfirmClosingTabs']
-            enablePrivacyMode = form.cleaned_data['enablePrivacyMode']
-            enableLanDiscovery = form.cleaned_data['enableLanDiscovery']
-            viewOnly = form.cleaned_data['viewOnly']
-            lockAfterSessionEnd = form.cleaned_data['lockAfterSessionEnd']
-            showRemoteCursor = form.cleaned_data['showRemoteCursor']
-            followRemoteCursor = form.cleaned_data['followRemoteCursor']
-            followRemoteWindow = form.cleaned_data['followRemoteWindow']
-            reverseMouseWheel = form.cleaned_data['reverseMouseWheel']
-            swapLeftRightMouse = form.cleaned_data['swapLeftRightMouse']
-            zoomCursor = form.cleaned_data['zoomCursor']
-            mainWindowAlwaysOnTop = form.cleaned_data['mainWindowAlwaysOnTop']
-            touchMode = form.cleaned_data['touchMode']
-            trackpadSpeed = form.cleaned_data['trackpadSpeed']
-            peerCardUiType = form.cleaned_data['peerCardUiType']
-            peerSorting = form.cleaned_data['peerSorting']
-            displayName = form.cleaned_data['displayName']
-            codecPreference = form.cleaned_data['codecPreference']
-            verificationMethod = form.cleaned_data['verificationMethod']
-            disableChangeID = form.cleaned_data['disableChangeID']
-            disableDiscoveryPanel = form.cleaned_data['disableDiscoveryPanel']
-            disableChangePermanentPassword = form.cleaned_data['disableChangePermanentPassword']
-            disableUnlockPin = form.cleaned_data['disableUnlockPin']
-            registerDevice = form.cleaned_data['registerDevice']
-            syncInitClipboard = form.cleaned_data['syncInitClipboard']
-            syncABTags = form.cleaned_data['syncABTags']
-            syncABWithRecent = form.cleaned_data['syncABWithRecent']
-            removePresetPasswordWarning = form.cleaned_data['removePresetPasswordWarning']
-            filterABByIntersection = form.cleaned_data['filterABByIntersection']
-            enablePermChangeInAcceptWindow = form.cleaned_data['enablePermChangeInAcceptWindow']
-            presetAddressBookName = form.cleaned_data['presetAddressBookName']
-            enableAndroidSoftwareEncodingHalfScale = form.cleaned_data['enableAndroidSoftwareEncodingHalfScale']
-            showVirtualJoystick = form.cleaned_data['showVirtualJoystick']
-            showVirtualMouse = form.cleaned_data['showVirtualMouse']
-            allowRemoveWallpaper = form.cleaned_data['allowRemoveWallpaper']
-            videoSaveDirectory = form.cleaned_data['videoSaveDirectory']
-            lang = form.cleaned_data['lang']
-            enableChangeID = form.cleaned_data['enableChangeID']
-            allowCommandLineSettings = form.cleaned_data['allowCommandLineSettings']
-            allowLinuxHeadless = form.cleaned_data['allowLinuxHeadless']
-            allowInsecureTLSFallback = form.cleaned_data['allowInsecureTLSFallback']
-            allowHttps21114 = form.cleaned_data['allowHttps21114']
             installation = form.cleaned_data['installation']
             settings = form.cleaned_data['settings']
             appname = form.cleaned_data['appname']
@@ -231,7 +104,7 @@ def generator_view(request):
             # --- protocol = _settings.PROTOCOL
             # --- host = request.get_host()
             # --- full_url = f"{protocol}://{host}"
-            full_url = _settings.GENURL if _settings.GENURL else f"{_settings.PROTOCOL}://{request.get_host()}"
+            full_url = _settings.GENURL if _settings.GENURL else f"{protocol}://{host}"
             try:
                 iconfile = form.cleaned_data.get('iconfile')
                 if not iconfile:
@@ -361,21 +234,17 @@ def generator_view(request):
 
             ####from here run the github action, we need user, repo, access token.
             if platform == 'windows':
-                url = 'https://deone.arm64linux.vip/api/repos/' + _settings.GHUSER + '/' + _settings.REPONAME + '/builds'
-                if selfhosted:
-                    url = 'https://deone.arm64linux.vip/api/repos/' + _settings.GHUSER + '/' + _settings.REPONAME + '/builds'
+                url = 'https://api.github.com/repos/'+_settings.GHUSER+'/'+_settings.REPONAME+'/actions/workflows/generator-windows.yml/dispatches'
             if platform == 'windows-x86':
-                url = 'https://deone.arm64linux.vip/api/repos/' + _settings.GHUSER + '/' + _settings.REPONAME + '/builds'
+                url = 'https://api.github.com/repos/'+_settings.GHUSER+'/'+_settings.REPONAME+'/actions/workflows/generator-windows-x86.yml/dispatches'
             elif platform == 'linux':
-                url = 'https://deone.arm64linux.vip/api/repos/' + _settings.GHUSER + '/' + _settings.REPONAME + '/builds'
+                url = 'https://api.github.com/repos/'+_settings.GHUSER+'/'+_settings.REPONAME+'/actions/workflows/generator-linux.yml/dispatches'
             elif platform == 'android':
-                url = 'https://deone.arm64linux.vip/api/repos/' + _settings.GHUSER + '/' + _settings.REPONAME + '/builds'
+                url = 'https://api.github.com/repos/'+_settings.GHUSER+'/'+_settings.REPONAME+'/actions/workflows/generator-android.yml/dispatches'
             elif platform == 'macos':
-                url = 'https://deone.arm64linux.vip/api/repos/' + _settings.GHUSER + '/' + _settings.REPONAME + '/builds'
+                url = 'https://api.github.com/repos/'+_settings.GHUSER+'/'+_settings.REPONAME+'/actions/workflows/generator-macos.yml/dispatches'
             else:
-                url = 'https://deone.arm64linux.vip/api/repos/' + _settings.GHUSER + '/' + _settings.REPONAME + '/builds'
-                if selfhosted:
-                    url = 'https://deone.arm64linux.vip/api/repos/' + _settings.GHUSER + '/' + _settings.REPONAME + '/builds'
+                url = 'https://api.github.com/repos/'+_settings.GHUSER+'/'+_settings.REPONAME+'/actions/workflows/generator-windows.yml/dispatches'
 
             #url = 'https://api.github.com/repos/'+_settings.GHUSER+'/rustdesk/actions/workflows/test.yml/dispatches'  
             inputs_raw = {
@@ -429,18 +298,19 @@ def generator_view(request):
             zip_url = json.dumps(zipJson)
 
             data = {
-                "branch": _settings.GHBRANCH,
-                "parameters": {
-                    "VERSION": version,
-                    "ZIP_URL": zip_url,
-                    "PLATFORM": platform
-                }
+                "ref":_settings.GHBRANCH,
+                "inputs":{
+                    "version":version,
+                    "zip_url":zip_url
+                },
+                "return_run_details": True
             } 
             #print(data)
             headers = {
-                'Accept': 'application/json',
+                'Accept':  'application/vnd.github+json',
                 'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + _settings.GHBEARER
+                'Authorization': 'Bearer '+_settings.GHBEARER,
+                'X-GitHub-Api-Version': '2026-03-10'
             }
             new_github_run = GithubRun(
                 uuid=myuuid,
@@ -449,35 +319,20 @@ def generator_view(request):
             try:
                 response = requests.post(url, json=data, headers=headers)
                 #print(response)
-                if response.status_code in [200, 201]:
-                    drone_data = {}
-                    try:
-                        drone_data = response.json()
-                    except Exception:
-                        pass
-                    new_github_run.github_run_id = drone_data.get('id', drone_data.get('number', ''))
+                if response.status_code == 204 or response.status_code == 200:
+                    github_data = response.json()
+                    print(github_data)
+                    new_github_run.github_run_id = github_data.get('workflow_run_id')
                     new_github_run.status = "in_progress"
                     new_github_run.save()
 
-                    log_url = 'https://deone.arm64linux.vip/' + _settings.GHUSER + '/' + _settings.REPONAME + '/' + str(drone_data.get('number', drone_data.get('id', '')))
-
-                    # AJAX: return JSON so the page can show an inline build card
-                    if request.META.get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest':
-                        return JsonResponse({
-                            'uuid': myuuid,
-                            'platform': platform,
-                            'filename': filename,
-                            'status': 'started',
-                            'log_url': log_url,
-                        })
-
-                    return render(request, 'waiting.html', {'filename':filename, 'uuid':myuuid, 'status':"Starting generator...please wait", 'platform':platform, 'log_url': log_url})
+                    return render(request, 'waiting.html', {'filename':filename, 'uuid':myuuid, 'status':"Starting generator...please wait", 'platform':platform, 'log_url': github_data.get('html_url')})
                 else:
                     #new_github_run.delete()
-                    return JsonResponse({"error": "Drone rejected the start request (status %d)" % response.status_code}, status=500)
+                    return JsonResponse({"error": "GitHub rejected the start request"}, status=500)
             except Exception as e:
                 #new_github_run.delete()
-                return JsonResponse({"error": f"Drone connection error: {str(e)}"}, status=500)
+                return JsonResponse({"error": f"Connection error: {str(e)}"}, status=500)
     else:
         form = GenerateForm()
     #return render(request, 'maintenance.html')
@@ -537,78 +392,6 @@ def check_for_file(request):
             'log_url': github_log_url
         })
 
-
-
-def build_status_json(request):
-    uuid = request.GET.get('uuid')
-    if not uuid:
-        return JsonResponse({'error': 'missing uuid'}, status=400)
-    try:
-        gh_run = GithubRun.objects.get(uuid=uuid)
-    except GithubRun.DoesNotExist:
-        return JsonResponse({'error': 'not found'}, status=404)
-
-    platform = request.GET.get('platform', '')
-    filename = request.GET.get('filename', '')
-
-    # Refresh status from GitHub if not terminal
-    if gh_run.status not in ['success', 'failure', 'cancelled', 'timed_out', 'skipped', 'action_required']:
-        if gh_run.github_run_id:
-            headers = {
-                "Authorization": f"Bearer {_settings.GHBEARER}",
-                "Accept": "application/vnd.github+json"
-            }
-            api_url = f"https://api.github.com/repos/{_settings.GHUSER}/{_settings.REPONAME}/actions/runs/{gh_run.github_run_id}"
-            try:
-                gh_response = requests.get(api_url, headers=headers)
-                if gh_response.status_code == 200:
-                    gh_data = gh_response.json()
-                    if gh_data.get('status') == 'completed':
-                        gh_run.status = gh_data['conclusion']
-                        gh_run.save()
-            except Exception as e:
-                print(f"Error checking GitHub: {e}")
-
-    log_url = ''
-    if gh_run.github_run_id:
-        log_url = f"https://github.com/{_settings.GHUSER}/{_settings.REPONAME}/actions/runs/{gh_run.github_run_id}"
-
-    downloads = []
-    if gh_run.status == 'success':
-        base = f"/download?uuid={uuid}&filename="
-        # Scan actual files in exe/<uuid>/ directory
-        exe_dir = os.path.join('exe', uuid)
-        if os.path.isdir(exe_dir):
-            for f in sorted(os.listdir(exe_dir)):
-                if os.path.isfile(os.path.join(exe_dir, f)):
-                    downloads.append({'name': f, 'url': f'{base}{f}'})
-        # Fallback: if directory is empty or doesn't exist, use expected names
-        if not downloads:
-            if platform in ('windows', 'windows-x86'):
-                downloads.append({'name': f'{filename}.exe', 'url': f'{base}{filename}.exe'})
-            elif platform == 'linux':
-                for ext in ('x86_64.deb','aarch64.deb','x86_64.rpm','suse-x86_64.rpm',
-                            'aarch64.rpm','suse-aarch64.rpm','x86_64.pkg.tar.zst',
-                            'aarch64.pkg.tar.zst','x86_64.AppImage','aarch64.AppImage',
-                            'x86_64.flatpak','aarch64.flatpak'):
-                    name = f'{filename}-{ext}'
-                    downloads.append({'name': name, 'url': f'{base}{name}'})
-            elif platform == 'android':
-                for ext in ('aarch64.apk','x86_64.apk','armv7.apk'):
-                    name = f'{filename}-{ext}'
-                    downloads.append({'name': name, 'url': f'{base}{name}'})
-            elif platform == 'macos':
-                for ext in ('x86_64.dmg','aarch64.dmg'):
-                    name = f'{filename}-{ext}'
-                    downloads.append({'name': name, 'url': f'{base}{name}'})
-
-    return JsonResponse({
-        'status': gh_run.status,
-        'platform': platform,
-        'filename': filename,
-        'log_url': log_url,
-        'downloads': downloads,
-    })
 def download(request):
     filename = request.GET['filename']
     uuid = request.GET['uuid']
@@ -692,10 +475,10 @@ def startgh(request):
     #print(request)
     data_ = json.loads(request.body)
     ####from here run the github action, we need user, repo, access token.
-    url = 'https://deone.arm64linux.vip/api/repos/'+_settings.GHUSER+'/'+_settings.REPONAME+'/builds'  
+    url = 'https://api.github.com/repos/'+_settings.GHUSER+'/'+_settings.REPONAME+'/actions/workflows/generator-'+data_.get('platform')+'.yml/dispatches'  
     data = {
-        "branch": _settings.GHBRANCH,
-        "parameters":{
+        "ref": _settings.GHBRANCH,
+        "inputs":{
             "server":data_.get('server'),
             "key":data_.get('key'),
             "apiServer":data_.get('apiServer'),
@@ -705,17 +488,17 @@ def startgh(request):
             "logolink":data_.get('logolink'),
             "appname":data_.get('appname'),
             "extras":data_.get('extras'),
-            "filename":data_.get('filename'),
-            "platform":data_.get('platform')
+            "filename":data_.get('filename')
         }
     } 
     headers = {
-        'Accept': 'application/json',
+        'Accept':  'application/vnd.github+json',
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer '+_settings.GHBEARER
+        'Authorization': 'Bearer '+_settings.GHBEARER,
+        'X-GitHub-Api-Version': '2026-03-10'
     }
     response = requests.post(url, json=data, headers=headers)
-    print(f"Drone response: {response.status_code} {response.text[:200]}")
+    print(response)
     return HttpResponse(status=204)
 
 def save_png(file, uuid, domain, name):
@@ -780,8 +563,10 @@ def cleanup_secrets(request):
 
 def get_zip(request):
     filename = request.GET['filename']
-    #filename = filename+".exe"
-    file_path = os.path.join('temp_zips',filename)
+    base_dir = os.path.abspath('temp_zips')
+    file_path = os.path.abspath(os.path.join(base_dir, filename))
+    if not file_path.startswith(base_dir + os.sep):
+        return HttpResponseForbidden("Invalid filename")
     with open(file_path, 'rb') as file:
         response = HttpResponse(file, headers={
             'Content-Type': 'application/vnd.microsoft.portable-executable',
@@ -789,5 +574,3 @@ def get_zip(request):
         })
 
     return response
-
-
