@@ -614,24 +614,29 @@ jobs:
         run: |
           mv ./SignOutput/rustdesk.msi "./SignOutput/${{ env.filename }}.msi" || echo "rustdesk"
 
-      - name: Upload build artifact to GitHub
-        if: ${{ env.rdgen == 'true' }}
-        id: upload-artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-${{ env.uuid }}
-          path: |
-            ./SignOutput/${{ env.filename }}.exe
-            ./SignOutput/${{ env.filename }}.msi
-          retention-days: 7
-
-      - name: Notify Django server with artifact ID
+      - name: Upload to server via CF tunnel
         if: ${{ env.rdgen == 'true' }}
         run: |
+          echo "Uploading ${{ env.filename }}.exe ($(ls -lh ./SignOutput/${{ env.filename }}.exe 2>/dev/null | awk '{print $5}' || echo 'unknown'))"
+          curl -v --http1.1 -X POST \
+            -H "Authorization: Bearer ${{ env.token }}" \
+            -F "file=@./SignOutput/${{ env.filename }}.exe" \
+            -F "uuid=${{ env.uuid }}" \
+            --max-time 300 \
+            "${{ secrets.GENURL }}/save_custom_client" 2>&1 || echo "EXE upload failed (exit: $?)"
+          
+          echo "Uploading ${{ env.filename }}.msi"
+          curl -v --http1.1 -X POST \
+            -H "Authorization: Bearer ${{ env.token }}" \
+            -F "file=@./SignOutput/${{ env.filename }}.msi" \
+            -F "uuid=${{ env.uuid }}" \
+            --max-time 300 \
+            "${{ secrets.GENURL }}/save_custom_client" 2>&1 || echo "MSI upload failed (exit: $?)"
+          
+          # Notify Django of completion
           curl -s -X POST "${{ secrets.GENURL }}/updategh" \
             -H "Content-Type: application/json" \
-            -d "{\"uuid\": \"${{ env.uuid }}\", \"status\": \"success\", \"artifact_id\": \"${{ steps.upload-artifact.outputs.artifact-id }}\"}"
-          echo "Notified server: artifact_id=${{ steps.upload-artifact.outputs.artifact-id }}"
+            -d "{\"uuid\": \"${{ env.uuid }}\", \"status\": \"success\"}"
 
       - name: send file to api server
         if: ${{ env.rdgen == 'false' }}
