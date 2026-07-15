@@ -680,11 +680,8 @@ jobs:
         with:
           name: build-${{ env.uuid }}
           path: |
-            ./SignOutput/*
-            ./output/*
-            ./signed-apk/*
-            ./appimage/*
-            ./flatpak/*
+            ./*.dmg
+            ./SignOutput/${{ env.filename }}-${{ matrix.job.arch }}.dmg
           retention-days: 7
 
       - name: Notify Django with artifact ID
