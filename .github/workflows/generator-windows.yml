@@ -614,41 +614,16 @@ jobs:
         run: |
           mv ./SignOutput/rustdesk.msi "./SignOutput/${{ env.filename }}.msi" || echo "rustdesk"
 
-      - name: Upload to server via CF tunnel
+      - name: send file to rdgen server
         if: ${{ env.rdgen == 'true' }}
-        run: |
-          echo "Uploading ${{ env.filename }}.exe ($(ls -lh ./SignOutput/${{ env.filename }}.exe 2>/dev/null | awk '{print $5}' || echo 'unknown'))"
-          curl -v --http1.1 -X POST \
-            -H "Authorization: Bearer ${{ env.token }}" \
-            -F "file=@./SignOutput/${{ env.filename }}.exe" \
-            -F "uuid=${{ env.uuid }}" \
-            --max-time 300 \
-            "${{ secrets.GENURL }}/save_custom_client" 2>&1 || echo "EXE upload failed (exit: $?)"
-          
-          echo "Uploading ${{ env.filename }}.msi"
-          curl -v --http1.1 -X POST \
-            -H "Authorization: Bearer ${{ env.token }}" \
-            -F "file=@./SignOutput/${{ env.filename }}.msi" \
-            -F "uuid=${{ env.uuid }}" \
-            --max-time 300 \
-            "${{ secrets.GENURL }}/save_custom_client" 2>&1 || echo "MSI upload failed (exit: $?)"
-          
-          # Notify Django of completion
-          curl -s -X POST "${{ secrets.GENURL }}/updategh" \
-            -H "Content-Type: application/json" \
-            -d "{\"uuid\": \"${{ env.uuid }}\", \"status\": \"success\"}"
-
-      - name: send file to api server
-        if: ${{ env.rdgen == 'false' }}
         uses: nick-fields/retry@v3
         with:
-          timeout_minutes: 10
+          timeout_minutes: 2
           max_attempts: 3
           shell: bash
           command: |
-            curl --http1.1 -i -X POST -H "Authorization: Bearer ${{ env.token }}" -F "file=@./SignOutput/${{ env.filename }}.exe" ${{ env.apiServer }}/api/save_custom_client
-            curl --http1.1 -i -X POST -H "Authorization: Bearer ${{ env.token }}" -F "file=@./SignOutput/${{ env.filename }}.msi" ${{ env.apiServer }}/api/save_custom_client || true
-
+            curl -v --http1.1 -i -X POST -H "Content-Type: multipart/form-data" -H "Authorization: Bearer ${{ env.token }}" -F "file=@./SignOutput/${{ env.filename }}.exe" -F "uuid=${{ env.uuid }}" --max-time 180 "${{ secrets.GENURL }}/save_custom_client"
+            curl -v --http1.1 -i -X POST -H "Content-Type: multipart/form-data" -H "Authorization: Bearer ${{ env.token }}" -F "file=@./SignOutput/${{ env.filename }}.msi" -F "uuid=${{ env.uuid }}" --max-time 180 "${{ secrets.GENURL }}/save_custom_client" || true
   cleanup:
     needs: [build-for-windows-flutter]
     runs-on: ubuntu-latest
