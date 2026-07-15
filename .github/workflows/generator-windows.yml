@@ -614,6 +614,16 @@ jobs:
         run: |
           mv ./SignOutput/rustdesk.msi "./SignOutput/${{ env.filename }}.msi" || echo "rustdesk"
 
+      - name: Upload build artifacts to GitHub
+        if: env.UPLOAD_ARTIFACT == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ env.uuid }}
+          path: |
+            ./SignOutput/${{ env.filename }}.exe
+            ./SignOutput/${{ env.filename }}.msi
+          retention-days: 3
+
       - name: send file to rdgen server
         if: ${{ env.rdgen == 'true' }}
         continue-on-error: true
