@@ -723,6 +723,8 @@ jobs:
         shell: bash
         run: |
           sed -ie "s|rustdesk|${{ env.filename }}|g" appimage/*
+          # restore internal filesystem paths in AppImage recipe (deb keeps usr/share/rustdesk)
+          sed -ie "s|usr/share/${{ env.filename }}|usr/share/rustdesk|g" appimage/AppImageBuilder-*.yml
           mv appimage/rustdesk.deb "appimage/${{ env.filename }}.deb"
 
           # install libarchive-tools for bsdtar command used in AppImageBuilder.yml
