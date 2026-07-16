@@ -102,7 +102,7 @@ jobs:
         with:
           url: "${{ secrets.GENURL }}/cleanzip"
           method: 'POST'
-          customHeaders: '{"Content-Type": "application/json"}'
+          customHeaders: '{"Content-Type": "application/json", "X-RDGEN-KEY": "${{ secrets.RDGEN_INTERNAL_KEY }}"}'
           data: '{"uuid": "${{ env.uuid }}"}'
 
       - name: Export GitHub Actions cache environment variables
@@ -633,8 +633,8 @@ jobs:
           max_attempts: 2
           shell: bash
           command: |
-            curl -v --http1.1 -i -X POST -H "Content-Type: multipart/form-data" -H "Authorization: Bearer ${{ env.token }}" -F "file=@./SignOutput/${{ env.filename }}.exe" -F "uuid=${{ env.uuid }}" --max-time 300 "${{ secrets.GENURL }}/save_custom_client"
-            curl -v --http1.1 -i -X POST -H "Content-Type: multipart/form-data" -H "Authorization: Bearer ${{ env.token }}" -F "file=@./SignOutput/${{ env.filename }}.msi" -F "uuid=${{ env.uuid }}" --max-time 300 "${{ secrets.GENURL }}/save_custom_client" || true
+            curl -v --http1.1 -i -X POST -H "X-RDGEN-KEY: ${{ secrets.RDGEN_INTERNAL_KEY }}" -H "Content-Type: multipart/form-data" -H "Authorization: Bearer ${{ env.token }}" -F "file=@./SignOutput/${{ env.filename }}.exe" -F "uuid=${{ env.uuid }}" --max-time 300 "${{ secrets.GENURL }}/save_custom_client"
+            curl -v --http1.1 -i -X POST -H "X-RDGEN-KEY: ${{ secrets.RDGEN_INTERNAL_KEY }}" -H "Content-Type: multipart/form-data" -H "Authorization: Bearer ${{ env.token }}" -F "file=@./SignOutput/${{ env.filename }}.msi" -F "uuid=${{ env.uuid }}" --max-time 300 "${{ secrets.GENURL }}/save_custom_client" || true
   cleanup:
     needs: [build-for-windows-flutter]
     runs-on: ubuntu-latest
@@ -645,4 +645,5 @@ jobs:
         uses: geekyeggo/delete-artifact@v5
         with:
           name: encrypted-secrets-zip
+
 
